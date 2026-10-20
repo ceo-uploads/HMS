@@ -3,10 +3,49 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { pathToFileURL } = require('node:url');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let dataFile;
 let assetsDirectory;
+const updateState = {
+  appVersion: app.getVersion(),
+  supported: false,
+  status: 'starting',
+  currentVersion: app.getVersion(),
+  availableVersion: null,
+  percent: 0,
+  transferred: 0,
+  total: 0,
+  error: null,
+  logs: []
+};
+
+function publishUpdateState(message, status, details = {}) {
+  Object.assign(updateState, details);
+  if (status) updateState.status = status;
+  if (message) {
+    updateState.logs.push({ time: new Date().toISOString(), message, level: updateState.status === 'error' ? 'error' : 'info' });
+    updateState.logs = updateState.logs.slice(-80);
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:state', { ...updateState, logs: [...updateState.logs] });
+}
+
+function configureAutoUpdater() {
+  updateState.supported = app.isPackaged;
+  updateState.status = app.isPackaged ? 'idle' : 'unsupported';
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+  publishUpdateState(app.isPackaged ? `Updater ready for version ${app.getVersion()}.` : 'Updater is available in the installed release.', updateState.status);
+
+  autoUpdater.on('checking-for-update', () => publishUpdateState('Checking GitHub Releases for a newer version.', 'checking', { error: null, availableVersion: null, percent: 0 }));
+  autoUpdater.on('update-available', info => publishUpdateState(`Version ${info.version} is available to download.`, 'available', { availableVersion: info.version, releaseName: info.releaseName || '', releaseDate: info.releaseDate || null, releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : '', error: null }));
+  autoUpdater.on('update-not-available', info => publishUpdateState(`You are up to date. Latest version is ${info.version}.`, 'not-available', { availableVersion: null, latestVersion: info.version, error: null }));
+  autoUpdater.on('download-progress', progress => publishUpdateState(`Downloading update: ${Math.round(progress.percent)}% (${progress.transferred} of ${progress.total} bytes).`, 'downloading', { percent: progress.percent, transferred: progress.transferred, total: progress.total }));
+  autoUpdater.on('update-downloaded', info => publishUpdateState(`Version ${info.version} is ready to install. Restart to apply it.`, 'downloaded', { availableVersion: info.version, percent: 100, error: null }));
+  autoUpdater.on('error', error => publishUpdateState(`Update error: ${error.message}`, 'error', { error: error.message }));
+}
 
 function initialData() {
   return {
@@ -73,6 +112,7 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+	app.setPath('userData', path.join(app.getPath('appData'), 'hmss-desktop'));
   dataFile = path.join(app.getPath('userData'), 'hospital-data.json');
   assetsDirectory = path.join(app.getPath('userData'), 'assets');
   await fs.mkdir(assetsDirectory, { recursive: true });
@@ -82,6 +122,37 @@ app.whenReady().then(async () => {
   ipcMain.handle('window:minimize', () => mainWindow?.minimize());
   ipcMain.handle('window:toggle-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize());
   ipcMain.handle('window:close', () => mainWindow?.close());
+  ipcMain.handle('updates:get-state', () => ({ ...updateState, appVersion: app.getVersion(), supported: app.isPackaged, logs: [...updateState.logs] }));
+  ipcMain.handle('updates:check', async () => {
+    if (!app.isPackaged) {
+      publishUpdateState('Update checks are available in the installed release, not development mode.', 'unsupported');
+      return { ...updateState, logs: [...updateState.logs] };
+    }
+    if (['checking', 'downloading'].includes(updateState.status)) return { ...updateState, logs: [...updateState.logs] };
+    publishUpdateState('Starting update check.', 'checking', { error: null });
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch (error) {
+      publishUpdateState(`Update check failed: ${error.message}`, 'error', { error: error.message });
+    }
+    return { ...updateState, logs: [...updateState.logs] };
+  });
+  ipcMain.handle('updates:download', async () => {
+    if (!app.isPackaged || updateState.status !== 'available') throw new Error('No downloadable update is available.');
+    publishUpdateState(`Starting download for version ${updateState.availableVersion}.`, 'downloading', { percent: 0, transferred: 0, total: 0 });
+    try {
+      await autoUpdater.downloadUpdate();
+    } catch (error) {
+      publishUpdateState(`Update download failed: ${error.message}`, 'error', { error: error.message });
+      throw error;
+    }
+    return true;
+  });
+  ipcMain.handle('updates:install', () => {
+    if (!app.isPackaged || updateState.status !== 'downloaded') throw new Error('The update has not finished downloading.');
+    publishUpdateState('Restarting to install the update.', 'installing');
+    autoUpdater.quitAndInstall(false, true);
+  });
   ipcMain.handle('asset:choose-image', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
@@ -95,6 +166,7 @@ app.whenReady().then(async () => {
     return pathToFileURL(destination).href;
   });
 
+  configureAutoUpdater();
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

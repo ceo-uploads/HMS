@@ -5,12 +5,12 @@
 		counter: { label: 'Counter', icon: '▤', tabs: ['Overview', 'New test', 'Checkout', 'Directory'] },
 		appointment: { label: 'Appointments', icon: '◷', tabs: ['Doctors', 'Live appointment', 'Pre-booked', 'Records'] },
 		booking: { label: 'Cabins', icon: '⌂', tabs: ['Cabins', 'Booking history'] },
-		management: { label: 'Management', icon: '⚙', tabs: ['Tests', 'Doctors', 'Referrals', 'Cabins'] },
+		management: { label: 'Management', icon: '⚙', tabs: ['Tests', 'Doctors', 'Referrals', 'Cabins', 'Dev Tunnel'] },
 		archive: { label: 'Archive & reports', icon: '▥', tabs: ['Live summary', 'Tests', 'Doctors', 'Bookings', 'Analytics'] }
 	};
 	const appRoot = document.getElementById('app');
 	const toastRoot = document.getElementById('toast-region');
-	const state = { data: null, user: null, route: { module: 'counter', tab: 0 }, query: '', filters: { date: 'all', status: 'all', sort: 'newest', from: '', to: '' }, modal: null, saving: false };
+	const state = { data: null, user: null, route: { module: 'counter', tab: 0 }, query: '', filters: { date: 'all', status: 'all', sort: 'newest', from: '', to: '' }, updater: { appVersion: 'Loading…', supported: false, status: 'starting', percent: 0, logs: [] }, modal: null, saving: false };
 	const nowISO = () => new Date().toISOString();
 	const id = prefix => `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 	const money = amount => `৳ ${Number(amount || 0).toLocaleString('en-BD')}`;
@@ -195,7 +195,8 @@
 	}
 
 	function renderManagement() {
-		const type = ['tests', 'doctors', 'referrals', 'cabins'][state.route.tab];
+		const type = ['tests', 'doctors', 'referrals', 'cabins', 'dev-tunnel'][state.route.tab];
+		if (type === 'dev-tunnel') return renderDevTunnel();
 		if (type === 'referrals') return renderReferralManagement();
 		const config = {
 			tests: { title: 'Clinical tests', subtitle: 'Manage the services and prices available at the diagnostics counter.', headers: ['Code', 'Test name', 'Price', 'Actions'] },
@@ -208,6 +209,29 @@
 		if (type === 'doctors') rows = records.map(item => `<tr><td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.id)} · ${escapeHtml(item.title || '')}</small></td><td>${escapeHtml(item.specialty)}</td><td>${escapeHtml(item.visits)}</td><td>${money(item.newPrice)}</td><td>${money(item.oldPrice)}</td>${manageActions(type, item)}</tr>`);
 		if (type === 'cabins') rows = records.map(item => `<tr><td><strong>${escapeHtml(item.id)}</strong></td><td>${escapeHtml(item.name)}</td><td>${money(item.price)} / day</td>${manageActions(type, item)}</tr>`);
 		return `${pageHeading(config.title, config.subtitle, `<button class="button button-primary" data-action="add-item" data-kind="${type}">＋&nbsp; Add ${type === 'tests' ? 'test' : type === 'doctors' ? 'doctor' : 'cabin'}</button>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search ${type}" value="${escapeHtml(state.query)}"></div></div>${panel(config.title, table(config.headers, rows))}`;
+	}
+
+	function renderDevTunnel() {
+		const update = state.updater;
+		const statusLabel = {
+			starting: 'Loading version information', idle: 'Ready to check for updates', unsupported: 'Available in installed releases only',
+			checking: 'Checking GitHub Releases', available: `Version ${update.availableVersion || ''} is available`,
+			'not-available': 'This installation is up to date', downloading: 'Downloading update', downloaded: 'Update ready to install',
+			installing: 'Restarting to install', error: 'Update check needs attention'
+		}[update.status] || 'Update status';
+		const checkDisabled = !update.supported || ['checking', 'downloading', 'downloaded', 'installing'].includes(update.status);
+		const primaryAction = update.status === 'available'
+			? `<button class="button button-primary" data-action="download-update">Download update · ${escapeHtml(update.availableVersion)}</button>`
+			: update.status === 'downloaded'
+				? `<button class="button button-primary" data-action="install-update">Restart and install</button>`
+				: `<button class="button button-primary" data-action="check-updates" ${checkDisabled ? 'disabled' : ''}>${update.status === 'checking' ? 'Checking…' : 'Check for updates'}</button>`;
+		const logs = (update.logs || []).slice(-40).reverse();
+		const progressVisible = ['downloading', 'downloaded'].includes(update.status);
+		const progress = Math.min(100, Math.max(0, Number(update.percent) || 0));
+		const message = update.status === 'unsupported'
+			? 'Update checks work in an installed Windows release. Development runs do not have GitHub release metadata.'
+			: update.error || statusLabel;
+		return `${pageHeading('Version & updates', 'Check the published GitHub release and apply updates without replacing local hospital records.', primaryAction)}<div class="update-grid"><section class="update-panel"><header class="update-panel-head"><div><span class="update-kicker">APPLICATION</span><h2>Installed version</h2></div><span class="update-channel"><i></i> Stable release</span></header><div class="update-version-row"><span class="update-version">v${escapeHtml(update.appVersion || '—')}</span><span class="update-version-label">Current version</span></div><div class="update-divider"></div><div class="update-detail-row"><span>Update source</span><strong>GitHub Releases · ceo-uploads/HMS</strong></div><div class="update-detail-row"><span>Latest checked version</span><strong>${escapeHtml(update.latestVersion || update.availableVersion || 'Not checked')}</strong></div><div class="update-detail-row"><span>Local data</span><strong>Preserved in user profile</strong></div><div class="update-status-line status-${escapeHtml(update.status)}"><i></i>${escapeHtml(message)}</div>${progressVisible ? `<div class="update-progress-wrap"><div class="update-progress-meta"><span>${update.status === 'downloaded' ? 'Download complete' : 'Download progress'}</span><strong>${Math.round(progress)}%</strong></div><div class="update-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress)}"><i style="width:${progress}%"></i></div></div>` : ''}${update.releaseNotes ? `<div class="update-release-notes"><strong>Release notes</strong><p>${escapeHtml(update.releaseNotes)}</p></div>` : ''}</section><section class="update-log-panel"><header class="update-panel-head"><div><span class="update-kicker">ACTIVITY</span><h2>Update log</h2></div><span class="update-log-count">${logs.length} entries</span></header><ol class="update-log-list">${logs.map(entry => `<li class="update-log-entry ${entry.level === 'error' ? 'is-error' : ''}"><time>${escapeHtml(new Date(entry.time).toLocaleString())}</time><span>${escapeHtml(entry.message)}</span></li>`).join('') || `<li class="update-log-empty">Update activity will appear here.</li>`}</ol></section></div><div class="update-footnote"><span>Updates replace application files only.</span><span>Your JSON database and local assets remain in <code>%APPDATA%\\hmss-desktop</code>.</span></div>`;
 	}
 
 	function manageActions(type, item) {
@@ -361,6 +385,18 @@
 		if (action === 'minimize') window.hospital?.minimize();
 		if (action === 'maximize') window.hospital?.toggleMaximize();
 		if (action === 'close') window.hospital?.close();
+		if (action === 'check-updates') {
+			try { await window.hospital?.checkForUpdates(); }
+			catch (error) { toast(`Could not check for updates: ${error.message}`, true); }
+		}
+		if (action === 'download-update') {
+			try { await window.hospital?.downloadUpdate(); }
+			catch (error) { toast(`Could not download update: ${error.message}`, true); }
+		}
+		if (action === 'install-update') {
+			try { await window.hospital?.installUpdate(); }
+			catch (error) { toast(`Could not install update: ${error.message}`, true); }
+		}
 		if (action === 'new-lab') go('counter', 1);
 		if (action === 'go-tests') go('management', 0);
 		if (action === 'book-doctor') { sessionStorage.setItem('hmss-doctor', button.dataset.doctor); go('appointment', button.dataset.pre ? 2 : 1); }
@@ -607,6 +643,8 @@
 
 	async function start() {
 		try {
+			if (window.hospital?.getUpdaterState) state.updater = await window.hospital.getUpdaterState();
+			else state.updater = { appVersion: 'Browser preview', supported: false, status: 'unsupported', percent: 0, logs: [] };
 			if (window.hospital?.load) state.data = await window.hospital.load();
 			else state.data = JSON.parse(localStorage.getItem('hmss-data') || 'null') || fallbackData();
 			const username = sessionStorage.getItem('hmss-session');
@@ -623,5 +661,9 @@
 	}
 
 	setInterval(expireCabinStays, 60000);
+	window.hospital?.onUpdaterState(update => {
+		state.updater = update;
+		if (state.user && state.route.module === 'management' && state.route.tab === 4) render();
+	});
 	start();
 })();

@@ -5,17 +5,56 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "pack": "electron-packager . HMSS --platform=win32 --arch=x64 --out=release --overwrite"
+    "pack": "electron-builder --win nsis --x64",
+    "publish": "electron-builder --win nsis --x64 --publish always"
   },
   "devDependencies": {
     "electron": "^44.9.1",
-    "electron-builder": "^26.15.3",
-    "electron-packager": "^14.2.1"
+    "electron-builder": "^26.15.3"
   },
   "allowScripts": {
-    "electron@34.5.8": true
+    "electron@44.9.1": true
   },
   "dependencies": {
     "electron-updater": "^6.8.9"
+  },
+  "build": {
+    "appId": "com.kabirhat.privatehospital",
+    "productName": "Kabirhat Private Hospital",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "js/**/*",
+      "styles/**/*",
+      "UI/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Kabirhat-Private-Hospital-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "ceo-uploads",
+      "repo": "HMS",
+      "releaseType": "release"
+    }
   }
 }
