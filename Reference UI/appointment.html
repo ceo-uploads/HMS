@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+
+<html lang="en" style="width: 1280px; height: 1170px; overflow: hidden; position: relative;">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <meta content="web_dashboard" name="shell-type" />
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <style>
+    @layer base {
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        overscroll-behavior: none;
+      }
+
+      main>:first-child {
+        margin-top: 0 !important;
+      }
+
+      main>:last-child {
+        margin-bottom: 0 !important;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script
+    id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-fixed": "#00174b", "on-secondary-fixed": "#00201d", "on-secondary-fixed-variant": "#005049", "surface-container-high": "#e2e7ff", "surface-container-low": "#f2f3ff", "tertiary": "#0051d5", "tertiary-fixed-dim": "#b4c5ff", "surface-variant": "#dae2fd", "background": "#faf8ff", "surface-container": "#eaedff", "on-tertiary": "#ffffff", "outline": "#707881", "on-background": "#131b2e", "surface": "#faf8ff", "secondary": "#006a61", "on-tertiary-container": "#fefcff", "on-primary-fixed-variant": "#004b73", "on-error-container": "#93000a", "on-secondary-container": "#006f66", "inverse-surface": "#283044", "tertiary-fixed": "#dbe1ff", "surface-dim": "#d2d9f4", "primary-container": "#007bb9", "outline-variant": "#bfc7d2", "primary": "#006194", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#6bd8cb", "surface-tint": "#006398", "inverse-on-surface": "#eef0ff", "surface-bright": "#faf8ff", "on-surface": "#131b2e", "secondary-fixed": "#89f5e7", "on-primary-container": "#fdfcff", "error-container": "#ffdad6", "inverse-primary": "#93ccff", "surface-container-highest": "#dae2fd", "on-secondary": "#ffffff", "error": "#ba1a1a", "secondary-container": "#86f2e4", "on-tertiary-fixed-variant": "#003ea8", "on-primary": "#ffffff", "on-surface-variant": "#3f4850", "on-primary-fixed": "#001d31", "on-error": "#ffffff", "primary-fixed-dim": "#93ccff", "tertiary-container": "#316bf3", "primary-fixed": "#cce5ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-md": "0.75rem", "space-lg": "1rem", "margin": "1rem", "margin-dense": "0.75rem", "gutter": "0.75rem", "space-xs": "0.25rem", "space-xl": "1.5rem", "gutter-dense": "0.5rem", "space-sm": "0.375rem" }, "fontFamily": { "display-lg": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "label-md": ["Inter"], "numeric-data-sm": ["Inter"], "numeric-data-md": ["Inter"], "shortcut-key": ["Inter"], "label-sm": ["Inter"], "body-md": ["Inter"], "numeric-data-lg": ["Inter"], "body-sm": ["Inter"] }, "fontSize": { "display-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.025em", "fontWeight": "700" }], "headline-sm": ["15px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }], "numeric-data-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.01em", "fontWeight": "500" }], "numeric-data-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "600" }], "shortcut-key": ["10px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.025em", "fontWeight": "600" }], "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "numeric-data-lg": ["18px", { "lineHeight": "22px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } };</script>
+</head>
+
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased select-none">
+  <header
+    class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <div class="h-8 px-space-md bg-surface-container-low flex items-center justify-between text-on-surface-variant">
+      <div class="flex items-center gap-space-sm"><span class="w-2 h-2 rounded-full bg-secondary"></span><span
+          class="font-label-sm text-label-sm tracking-tight text-on-surface">kClinicalPro HMS</span><span
+          class="text-outline-variant font-body-sm text-body-sm">|</span><span
+          class="font-body-sm text-body-sm text-on-surface-variant">Counter &amp; Diagnostics Workstation
+          v2.4.1</span><span
+          class="px-space-xs py-0.5 rounded bg-surface-container text-primary font-numeric-data-sm text-numeric-data-sm font-semibold">(Rust
+          Engine: Localhost SQLite 0.4ms)</span></div>
+      <div class="flex items-center h-full"><button aria-label="Minimize"
+          class="w-10 h-full flex items-center justify-center hover:bg-surface-container-high transition-colors"
+          type="button"><span class="material-symbols-outlined text-[14px]">remove</span></button><button
+          aria-label="Maximize"
+          class="w-10 h-full flex items-center justify-center hover:bg-surface-container-high transition-colors"
+          type="button"><span
+            class="material-symbols-outlined text-[13px]">check_box_outline_blank</span></button><button
+          aria-label="Close"
+          class="w-10 h-full flex items-center justify-center hover:bg-error hover:text-on-error transition-colors"
+          type="button"><span class="material-symbols-outlined text-[14px]">close</span></button></div>
+    </div>
+    <div class="h-14 px-margin flex items-center justify-between gap-space-lg">
+      <div class="flex items-center gap-space-lg">
+        <div class="flex items-center gap-space-sm"><img alt="Clinical Pro HMS Logo" class="h-8 w-auto object-contain"
+            src="https://lh3.googleusercontent.com/aida/AEtjO1VbhNbWf3oXL56_X1FGvy-JJFzPm4G2Lvc9OaJ0wfcPX4NV2b2OsVEgX0GOb3qccL_lgoE9kdSBzC_gL4i7S_jUA64cFDObPp6MRA4qZbfMFXSevObsmL_hjKQIt18z3CyV3vzkDLYY5sNwhI9eRmMxk7NcB5wB_hcklIC_NYUGeMNpb0jRnk1cTaUetuqg7u7XqBaWFH4xwmrG4MSpy6D4ZzSVKmTgGG9HLfMWqRFQ1ZEBBmdgjNwlgsM" />
+          <div class="flex flex-col"><span
+              class="font-headline-sm text-headline-sm text-on-surface font-bold leading-none">ClinicalPro
+              HMS</span><span class="font-label-sm text-label-sm text-outline leading-tight">MediCore OS Precision
+              Suite</span></div>
+        </div>
+        <div class="h-6 w-px bg-surface-container-high"></div>
+        <nav class="flex items-center gap-space-xs"
+          data-active-classes="bg-primary-container text-on-primary-container font-semibold shadow-sm"><a
+            class="px-space-md py-1.5 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all"
+            data-path="counter" href="#">01 Counter</a><a aria-current="page"
+            class="px-space-md py-1.5 rounded transition-all bg-primary-container text-on-primary-container font-semibold shadow-sm"
+            data-path="appointment" href="#">02 Appointment</a><a
+            class="px-space-md py-1.5 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all"
+            data-path="booking" href="#">03 Booking</a><a
+            class="px-space-md py-1.5 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all"
+            data-path="management" href="#">04 Management</a><a
+            class="px-space-md py-1.5 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all"
+            data-path="archive" href="#">05 Archive</a></nav>
+      </div>
+      <div class="flex items-center gap-space-md">
+        <div class="hidden xl:flex items-center gap-space-sm px-space-md py-1 rounded bg-surface-container-low"><span
+            class="material-symbols-outlined text-primary text-[18px]">schedule</span>
+          <div class="flex flex-col"><span
+              class="font-numeric-data-md text-numeric-data-md text-on-surface font-semibold">10:42:18 AM</span><span
+              class="font-label-sm text-label-sm text-on-surface-variant">Shift A - Morning | Counter #04 (General
+              Lab)</span></div>
+          </div>
+      </div>
+    </div>
+    <div
+      class="h-10 px-margin bg-surface-container-low flex items-center justify-between text-on-surface-variant border-t border-surface-container-high/60">
+      <div class="flex items-center gap-space-lg">
+        <div class="flex items-center gap-space-xs"><span
+            class="font-label-sm text-label-sm uppercase font-semibold text-outline">Accelerators:</span>
+          <div class="flex items-center gap-1"><kbd
+              class="px-1.5 py-0.5 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F1</kbd><span
+              class="font-label-sm text-label-sm text-on-surface-variant">Help</span></div>
+          <div class="flex items-center gap-1"><kbd
+              class="px-1.5 py-0.5 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F2</kbd><span
+              class="font-label-sm text-label-sm text-on-surface-variant">New Test</span></div>
+          <div class="flex items-center gap-1"><kbd
+              class="px-1.5 py-0.5 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F9</kbd><span
+              class="font-label-sm text-label-sm text-on-surface-variant">Print</span></div>
+          <div class="flex items-center gap-1"><kbd
+              class="px-1.5 py-0.5 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F12</kbd><span
+              class="font-label-sm text-label-sm text-on-surface-variant">Lock</span></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-space-md"><span class="font-label-sm text-label-sm text-outline">Department:
+          Clinical Diagnostics</span><span
+          class="font-numeric-data-sm text-numeric-data-sm text-primary font-semibold">TPS: 128 ops/min</span></div>
+    </div>
+    <div
+      class="h-9 px-margin bg-surface-container-lowest flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+      <nav class="flex items-center gap-space-xs"
+        data-active-classes="bg-surface-container-high text-primary font-semibold"><a
+          class="px-space-md py-1 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+          data-path="dashboard" href="#">Dashboard</a><a
+          class="px-space-md py-1 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+          data-path="live-ap" href="#">Live-AP</a><a
+          class="px-space-md py-1 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+          data-path="pre-ap" href="#">Pre-AP</a><a
+          class="px-space-md py-1 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+          data-path="pre-record" href="#">Pre-Record</a><a
+          class="px-space-md py-1 rounded text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+          data-path="directory" href="#">Directory</a></nav>
+      <div class="flex items-center gap-space-md">
+        <div class="flex items-center gap-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span><span
+            class="font-label-sm text-label-sm text-on-surface-variant">Sync Active</span></div><span
+          class="font-numeric-data-sm text-numeric-data-sm text-outline">Workstation Unit 02</span>
+      </div>
+    </div>
+  </header>
+  <aside
+    class="fixed left-0 top-[162px] bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <div class="p-space-md bg-surface-container-low">
+      <div class="relative flex items-center"><span
+          class="material-symbols-outlined absolute left-2 text-outline text-[16px]">search</span><input
+          class="w-full pl-7 pr-space-md py-1 rounded bg-surface-container-lowest font-body-sm text-body-sm text-on-surface outline-none placeholder:text-outline"
+          placeholder="Quick search (Ctrl+K)..." readonly="" type="text" /><kbd
+          class="absolute right-2 px-1 py-0.2 rounded bg-surface-container font-shortcut-key text-shortcut-key text-on-surface-variant">Ctrl
+          K</kbd></div>
+    </div>
+    <div class="p-space-md flex-1 flex flex-col gap-space-sm overflow-y-auto"><span
+        class="font-label-sm text-label-sm uppercase font-semibold text-outline px-space-xs">Queue &amp; Context</span>
+      <div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-1">
+        <div class="flex items-center justify-between"><span
+            class="font-label-md text-label-md text-on-surface font-semibold">PID-90824</span><span
+            class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Triage
+            Pass</span></div><span class="font-body-sm text-body-sm text-on-surface-variant">Sarah Jenkins • Female,
+          34y</span><span class="font-numeric-data-sm text-numeric-data-sm text-primary font-medium">CBC + Lipid
+          Panel</span>
+      </div>
+      <div class="p-space-sm rounded bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+        <div class="flex items-center justify-between"><span
+            class="font-label-md text-label-md text-on-surface font-semibold">PID-90825</span><span
+            class="px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm">Stat
+            Urgency</span></div><span class="font-body-sm text-body-sm text-on-surface-variant">Robert Vance • Male,
+          62y</span><span class="font-numeric-data-sm text-numeric-data-sm text-error font-medium">Troponin-I
+          Rapid</span>
+      </div>
+      <div class="p-space-sm rounded bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+        <div class="flex items-center justify-between"><span
+            class="font-label-md text-label-md text-on-surface font-semibold">PID-90826</span><span
+            class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Waiting</span>
+        </div><span class="font-body-sm text-body-sm text-on-surface-variant">Anwar Begum • Female, 48y</span><span
+          class="font-numeric-data-sm text-numeric-data-sm text-outline font-medium">HbA1c + Fasting Sugar</span>
+      </div>
+    </div>
+    <div class="p-space-md bg-surface-container-low flex items-center justify-between">
+      <div class="flex items-center gap-space-xs"><span
+          class="material-symbols-outlined text-secondary text-[16px]">sync_alt</span><span
+          class="font-label-sm text-label-sm text-on-surface-variant">Queue: 14 pending</span></div><span
+        class="font-label-sm text-label-sm text-primary font-semibold">Auto Refresh</span>
+    </div>
+  </aside>
+  <div class="pl-64">
+    <main class="w-full pt-[162px] bg-background min-h-screen">
+      <div class="flex flex-col w-full">
+        <!-- Top Section Bar / Workstation KPI Strip -->
+        <div class="px-space-md py-space-sm bg-surface-container-lowest flex items-center justify-between shadow-sm">
+          <div class="flex items-center gap-space-md">
+            <div class="flex items-center gap-space-xs">
+              <span class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></span>
+              <span class="font-headline-sm text-headline-sm text-on-surface">Consultation Desk &amp; Appointment
+                Manager</span>
+              <span
+                class="px-2 py-0.5 rounded-full bg-surface-container text-primary font-numeric-data-sm text-numeric-data-sm">Shift
+                #1 • OPD Chambers</span>
+            </div>
+            <div
+              class="flex items-center gap-1.5 px-space-sm py-0.5 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+              <span class="material-symbols-outlined text-[15px] text-primary">calendar_today</span>
+              <span>Today: Mon, 24 Feb 2025</span>
+            </div>
+          </div>
+          <!-- Keyboard Shortcut Guidance Ribbon -->
+          <div class="flex items-center gap-space-sm">
+            <div class="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded">
+              <kbd
+                class="px-1.5 py-0.2 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F3</kbd>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Live-AP </span>
+            </div>
+            <div class="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded">
+              <kbd
+                class="px-1.5 py-0.2 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F4</kbd>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Pre-AP (Advance)</span>
+            </div>
+            <div class="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded">
+              <kbd
+                class="px-1.5 py-0.2 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F6</kbd>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Pre-Record</span>
+            </div>
+            <div class="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded">
+              <kbd
+                class="px-1.5 py-0.2 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F7</kbd>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Directory</span>
+            </div>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1 rounded bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:shadow-sm transition-all"
+              onclick="toggleA4Modal()">
+              <span class="material-symbols-outlined text-[16px]">print</span>
+              <span>A4 Voucher Slip Preview</span>
+            </button>
+          </div>
+        </div>
+        <!-- Internal Tabbed Workspace Navigation -->
+        <div class="px-space-md pt-space-xs pb-space-sm bg-surface-container-low flex items-center justify-between">
+          <div class="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
+            <button
+              class="flex items-center gap-2 px-space-md py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm transition-all"
+              id="tabBtn-dashboard" onclick="switchMainTab('dashboard')">
+              <span class="material-symbols-outlined text-[18px]">space_dashboard</span>
+              <span>~ Dashboard (Doctors Roster)</span>
+              <span
+                class="ml-1 px-1.5 py-0.2 rounded-full bg-surface-container-lowest/20 font-numeric-data-sm text-numeric-data-sm">4
+                Active</span>
+            </button>
+            <button
+              class="flex items-center gap-2 px-space-md py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+              id="tabBtn-liveap" onclick="switchMainTab('liveap')">
+              <span class="material-symbols-outlined text-[18px]">bolt</span>
+              <span>~ Live-AP </span>
+              <span
+                class="px-1.5 py-0.2 rounded bg-secondary/10 text-secondary font-numeric-data-sm text-numeric-data-sm">Token
+                Active</span>
+            </button>
+            <button
+              class="flex items-center gap-2 px-space-md py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+              id="tabBtn-preap" onclick="switchMainTab('preap')">
+              <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+              <span>~ Pre-AP (Scheduled Booking)</span>
+            </button>
+            <button
+              class="flex items-center gap-2 px-space-md py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+              id="tabBtn-prerecord" onclick="switchMainTab('prerecord')">
+              <span class="material-symbols-outlined text-[18px]">hourglass_top</span>
+              <span>~ Pre-Record (Pending Slips)</span>
+              <span
+                class="px-1.5 py-0.2 rounded bg-surface-variant text-on-surface font-numeric-data-sm text-numeric-data-sm font-semibold">3</span>
+            </button>
+            <button
+              class="flex items-center gap-2 px-space-md py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all"
+              id="tabBtn-directory" onclick="switchMainTab('directory')">
+              <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+              <span>~ Directory (Completed Registry)</span>
+              <span
+                class="px-1.5 py-0.2 rounded bg-surface-variant text-on-surface font-numeric-data-sm text-numeric-data-sm">38
+                Today</span>
+            </button>
+          </div>
+          <!-- Quick Stats Bar -->
+          <div class="flex items-center gap-space-lg text-on-surface-variant">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[18px]">person_check</span>
+              <span class="font-label-sm text-label-sm">Tokens Served:</span>
+              <span class="font-numeric-data-md text-numeric-data-md text-primary font-bold">29</span>
+            </div>
+            <div class="h-4 w-px bg-outline-variant"></div>
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary text-[18px]">savings</span>
+              <span class="font-label-sm text-label-sm">Collected:</span>
+              <span class="font-numeric-data-md text-numeric-data-md text-secondary font-bold">৳ 32,400</span>
+            </div>
+          </div>
+        </div>
+        <!-- WORKSPACE MAIN CANVAS -->
+        <div class="p-margin flex-1 flex flex-col gap-space-md">
+          <!-- VIEW 1: DASHBOARD (DOCTORS ROSTER & CHAMBER SCHEDULES) -->
+          <div class="flex flex-col gap-space-md" id="view-dashboard">
+            <!-- Search & Specialty Filter Bar -->
+            <div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+              <div class="flex items-center gap-space-sm flex-1 max-w-xl">
+                <div class="relative w-full">
+                  <span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">search</span>
+                  <input
+                    class="w-full pl-9 pr-14 py-2 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface outline-none focus:bg-surface-container-lowest shadow-inner"
+                    placeholder="Filter doctor name, room number, or qualification (Ctrl+F)..." type="text" />
+                  <kbd
+                    class="absolute right-2 top-2.5 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-shortcut-key text-shortcut-key">Ctrl
+                    F</kbd>
+                </div>
+              </div>
+              <div class="flex items-center gap-space-sm">
+                <span class="font-label-sm text-label-sm text-outline">Filter Specialty:</span>
+                <div class="flex items-center gap-1">
+                  <button class="px-2.5 py-1 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm">All
+                    (4)</button>
+                  <button
+                    class="px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm">Cardiology
+                    (2)</button>
+                  <button
+                    class="px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm">Neurology
+                    (1)</button>
+                  <button
+                    class="px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm">Pediatrics
+                    (1)</button>
+                </div>
+              </div>
+            </div>
+            <!-- 4-Column Doctors Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+              <!-- Doctor 1: Prof. Dr. Rajesh Patel -->
+              <div
+                class="group relative rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
+                <div class="relative h-48 w-full bg-surface-container overflow-hidden">
+                  <img alt="Prof. Dr. Rajesh Patel portrait"
+                    class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrL-4H9CEMfP-7LwXGc_ChEzjeRikfDwNgQe4yjkBxqirkh50_8nw24UII8tmGxwMLeKnhdTbP2mAYFdRisGI_BKM-0nP6fhtb6Ln7ldsQHH4oMYkyiKtBNb4u1GkTof_r5slr3XaRKIrQK4cS3-fw6vhz7_WnqfnBoIr_nFNTCfr-sNjxkP2K4VbgHxW3T-etACfshWnYVurNSvlnJK1k9RE9wjAFhxyJPKqav1zdHTkhPt8h7-n4" />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent flex items-end p-space-sm">
+                    <div class="flex items-center justify-between w-full">
+                      <span
+                        class="px-2 py-0.5 rounded bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-semibold">Chamber:
+                        Room 302</span>
+                      <span class="px-2 py-0.5 rounded bg-secondary text-on-secondary font-label-sm text-label-sm">Sat -
+                        Thu</span>
+                    </div>
+                  </div>
+                  <span
+                    class="absolute top-2 left-2 px-2 py-0.5 rounded bg-primary-container text-on-primary-container font-shortcut-key text-shortcut-key">DOC-701</span>
+                  <span
+                    class="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-secondary font-label-sm text-label-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span> Available
+                  </span>
+                </div>
+                <div class="p-space-md flex-1 flex flex-col justify-between gap-space-sm">
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center justify-between">
+                      <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Prof. Dr.
+                        Rajesh Patel</h3>
+                    </div>
+                    <span class="font-body-sm text-body-sm text-primary font-semibold">Senior Cardiologist &amp; Chief
+                      Interventionist</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">MBBS, FCPS (Cardiology),
+                      FACC</span>
+                  </div>
+                  <div
+                    class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-1 text-on-surface-variant font-body-sm text-body-sm">
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-primary">schedule</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-medium">04:00 PM - 09:00 PM</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-secondary">phone_in_talk</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-semibold text-on-surface">+880
+                        1711-209841</span>
+                    </div>
+                  </div>
+                  <!-- Dual Pricing Badges -->
+                  <div class="grid grid-cols-2 gap-space-xs bg-surface-container-lowest rounded-lg">
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">New Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 1,200</span>
+                    </div>
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">Old Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-secondary font-bold">৳ 700</span>
+                    </div>
+                  </div>
+                  <!-- Action Button -->
+                  <button
+                    class="w-full mt-1 py-2 px-space-md rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all group-hover:bg-primary-container"
+                    onclick="openBookingChoiceModal('Prof. Dr. Rajesh Patel', 'DOC-701', 'Room 302', '1200', '700', '04:00 PM - 09:00 PM')">
+                    <span class="material-symbols-outlined text-[17px]">bookmark_add</span>
+                    <span>Appointment Booking</span>
+                    <kbd
+                      class="px-1.5 py-0.2 rounded bg-on-primary/20 text-on-primary font-shortcut-key text-shortcut-key ml-auto">F2</kbd>
+                  </button>
+                </div>
+              </div>
+              <!-- Doctor 2: Dr. Sarah Jenkins -->
+              <div
+                class="group relative rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
+                <div class="relative h-48 w-full bg-surface-container overflow-hidden">
+                  <img alt="Dr. Sarah Jenkins portrait"
+                    class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyzlyOPTZ0YS7g0huSoiDEztTdHesBb55e8aNjhF1_ovOCgU628WLgjtRLPtgo2de8L0ln2Xd1-8FBCbk0W4gl6U9yF_lp83QRFCb0wlP0yX508KEuWeX_dLvstfMNu7SL0p4sbRq9BfiVAtOP6LJu_sCd7H3Puk8-JUVGqnU-jtuBbhohIt9MjgRE9UVSOKwAsql_1OdzB79lZPJlWJrJRDmkM0pZcb876jZ10KnEW3eujXgbZTLb" />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent flex items-end p-space-sm">
+                    <div class="flex items-center justify-between w-full">
+                      <span
+                        class="px-2 py-0.5 rounded bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-semibold">Chamber:
+                        Room 305</span>
+                      <span class="px-2 py-0.5 rounded bg-secondary text-on-secondary font-label-sm text-label-sm">Daily
+                        OPD</span>
+                    </div>
+                  </div>
+                  <span
+                    class="absolute top-2 left-2 px-2 py-0.5 rounded bg-primary-container text-on-primary-container font-shortcut-key text-shortcut-key">DOC-702</span>
+                  <span
+                    class="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-secondary font-label-sm text-label-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span> In Chamber
+                  </span>
+                </div>
+                <div class="p-space-md flex-1 flex flex-col justify-between gap-space-sm">
+                  <div class="flex flex-col gap-1">
+                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Dr. Sarah
+                      Jenkins</h3>
+                    <span class="font-body-sm text-body-sm text-primary font-semibold">Specialist Cardiologist &amp;
+                      Echo Specialist</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">MBBS, MD (Cardiology)</span>
+                  </div>
+                  <div
+                    class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-1 text-on-surface-variant font-body-sm text-body-sm">
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-primary">schedule</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-medium">09:00 AM - 01:00 PM</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-secondary">phone_in_talk</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-semibold text-on-surface">+880
+                        1822-459110</span>
+                    </div>
+                  </div>
+                  <!-- Dual Pricing Badges -->
+                  <div class="grid grid-cols-2 gap-space-xs bg-surface-container-lowest rounded-lg">
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">New Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 1,000</span>
+                    </div>
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">Old Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-secondary font-bold">৳ 600</span>
+                    </div>
+                  </div>
+                  <button
+                    class="w-full mt-1 py-2 px-space-md rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all group-hover:bg-primary-container"
+                    onclick="openBookingChoiceModal('Dr. Sarah Jenkins', 'DOC-702', 'Room 305', '1000', '600', '09:00 AM - 01:00 PM')">
+                    <span class="material-symbols-outlined text-[17px]">bookmark_add</span>
+                    <span>Appointment Booking</span>
+                    <kbd
+                      class="px-1.5 py-0.2 rounded bg-on-primary/20 text-on-primary font-shortcut-key text-shortcut-key ml-auto">F2</kbd>
+                  </button>
+                </div>
+              </div>
+              <!-- Doctor 3: Dr. Marcus Vance -->
+              <div
+                class="group relative rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
+                <div class="relative h-48 w-full bg-surface-container overflow-hidden">
+                  <img alt="Dr. Marcus Vance portrait"
+                    class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmrijQLVrRHBvhXwF_7qIXQequk10wIB-pPwyjz212UV8LToQhjmdZao7KPxQZN7YWenMnJeAwMJSfVN8Tlhq_9pQfz0tJBYdG8iSFdyM9pOLj2vC_arH-1Hy7QVj9duyb80beeimoUn_uCMQdn6NBa6wsRyenHLIRFglLHm2jaZBIlMo07uzCuIZX1r0VtkTecyh3_nMP5aunsPwmM3IzrQ-iScgE0dVmyxdwQmoCQSAJ6qnPkh7T" />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent flex items-end p-space-sm">
+                    <div class="flex items-center justify-between w-full">
+                      <span
+                        class="px-2 py-0.5 rounded bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-semibold">Chamber:
+                        Room 410</span>
+                      <span class="px-2 py-0.5 rounded bg-tertiary text-on-tertiary font-label-sm text-label-sm">Sun,
+                        Tue, Thu</span>
+                    </div>
+                  </div>
+                  <span
+                    class="absolute top-2 left-2 px-2 py-0.5 rounded bg-primary-container text-on-primary-container font-shortcut-key text-shortcut-key">DOC-703</span>
+                  <span
+                    class="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-on-surface font-label-sm text-label-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Chamber at 5 PM
+                  </span>
+                </div>
+                <div class="p-space-md flex-1 flex flex-col justify-between gap-space-sm">
+                  <div class="flex flex-col gap-1">
+                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Dr. Marcus
+                      Vance</h3>
+                    <span class="font-body-sm text-body-sm text-primary font-semibold">Senior Neurologist &amp; Stroke
+                      Consultant</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">MBBS, MS, PhD (Neuro
+                      Sciences)</span>
+                  </div>
+                  <div
+                    class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-1 text-on-surface-variant font-body-sm text-body-sm">
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-primary">schedule</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-medium">05:00 PM - 10:00 PM</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-secondary">phone_in_talk</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-semibold text-on-surface">+880
+                        1933-771240</span>
+                    </div>
+                  </div>
+                  <!-- Dual Pricing Badges -->
+                  <div class="grid grid-cols-2 gap-space-xs bg-surface-container-lowest rounded-lg">
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">New Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 1,500</span>
+                    </div>
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">Old Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-secondary font-bold">৳ 900</span>
+                    </div>
+                  </div>
+                  <button
+                    class="w-full mt-1 py-2 px-space-md rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all group-hover:bg-primary-container"
+                    onclick="openBookingChoiceModal('Dr. Marcus Vance', 'DOC-703', 'Room 410', '1500', '900', '05:00 PM - 10:00 PM')">
+                    <span class="material-symbols-outlined text-[17px]">bookmark_add</span>
+                    <span>Appointment Booking</span>
+                    <kbd
+                      class="px-1.5 py-0.2 rounded bg-on-primary/20 text-on-primary font-shortcut-key text-shortcut-key ml-auto">F2</kbd>
+                  </button>
+                </div>
+              </div>
+              <!-- Doctor 4: Dr. Elena Rostova -->
+              <div
+                class="group relative rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
+                <div class="relative h-48 w-full bg-surface-container overflow-hidden">
+                  <img alt="Dr. Elena Rostova portrait"
+                    class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoemh8Esxov14vNwjpdQ5Dg9OvqrZ_rJzfbKAq4ScyJcJ6OhJdv3C6L7f5PvossFZrwBNLk9TCH4Dxp7KwGkhNB44xwuT-1_315dOpqFDuNrigiBZOYigSU8FcLvRDnf9s8JO0QM11XXh_l888R9sbd8kwT-IhqvxIcAdFhmDzByx65GNE_HW-yZElTS9etY0FVge-6G5LITbdthCw5c06Q_kJQ_SjlgibErwGNv69Bi6ML3YJEai6" />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent flex items-end p-space-sm">
+                    <div class="flex items-center justify-between w-full">
+                      <span
+                        class="px-2 py-0.5 rounded bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-semibold">Chamber:
+                        Room 201</span>
+                      <span class="px-2 py-0.5 rounded bg-secondary text-on-secondary font-label-sm text-label-sm">Sat -
+                        Wed</span>
+                    </div>
+                  </div>
+                  <span
+                    class="absolute top-2 left-2 px-2 py-0.5 rounded bg-primary-container text-on-primary-container font-shortcut-key text-shortcut-key">DOC-704</span>
+                  <span
+                    class="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-secondary font-label-sm text-label-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span> Active Intake
+                  </span>
+                </div>
+                <div class="p-space-md flex-1 flex flex-col justify-between gap-space-sm">
+                  <div class="flex flex-col gap-1">
+                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Dr. Elena
+                      Rostova</h3>
+                    <span class="font-body-sm text-body-sm text-primary font-semibold">Senior Pediatrician &amp; Child
+                      Health Specialist</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">MBBS, DCH, FCPS
+                      (Pediatrics)</span>
+                  </div>
+                  <div
+                    class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-1 text-on-surface-variant font-body-sm text-body-sm">
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-primary">schedule</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-medium">10:00 AM - 03:00 PM</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-secondary">phone_in_talk</span>
+                      <span class="font-numeric-data-sm text-numeric-data-sm font-semibold text-on-surface">+880
+                        1611-884022</span>
+                    </div>
+                  </div>
+                  <!-- Dual Pricing Badges -->
+                  <div class="grid grid-cols-2 gap-space-xs bg-surface-container-lowest rounded-lg">
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">New Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 900</span>
+                    </div>
+                    <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                      <span class="font-label-sm text-label-sm text-outline">Old Patient</span>
+                      <span class="font-numeric-data-lg text-numeric-data-lg text-secondary font-bold">৳ 500</span>
+                    </div>
+                  </div>
+                  <button
+                    class="w-full mt-1 py-2 px-space-md rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all group-hover:bg-primary-container"
+                    onclick="openBookingChoiceModal('Dr. Elena Rostova', 'DOC-704', 'Room 201', '900', '500', '10:00 AM - 03:00 PM')">
+                    <span class="material-symbols-outlined text-[17px]">bookmark_add</span>
+                    <span>Appointment Booking</span>
+                    <kbd
+                      class="px-1.5 py-0.2 rounded bg-on-primary/20 text-on-primary font-shortcut-key text-shortcut-key ml-auto">F2</kbd>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- VIEW 2 & 3: INTEGRATED WORKSTATION (LIVE-AP / PRE-AP DUAL ENGINE) -->
+          <div class="hidden flex flex-col lg:flex-row gap-space-md" id="view-appointment-form">
+            <!-- Left Panel: Doctor & Patient Intake -->
+            <div class="w-full lg:w-7/12 flex flex-col gap-space-md">
+              <!-- Intake Mode Banner -->
+              <div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between"
+                id="form-mode-banner">
+                <div class="flex items-center gap-space-sm">
+                  <span class="material-symbols-outlined text-primary text-[24px]" id="form-mode-icon">bolt</span>
+                  <div class="flex flex-col">
+                    <span class="font-headline-sm text-headline-sm text-on-surface font-bold"
+                      id="form-mode-title">Live-AP Walk-in Consultation Intake</span>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant" id="form-mode-sub">Immediate counter
+                      arrival • Auto-generates serial token &amp; live queue pass</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span
+                    class="px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wider"
+                    id="form-badge-status">Status: Done</span>
+                  <button class="p-1 rounded hover:bg-surface-container text-outline hover:text-on-surface"
+                    onclick="switchMainTab('dashboard')">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+              </div>
+              <!-- 1. Doctor Selection Accordion / Picker Card -->
+              <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-sm">
+                <div class="flex items-center justify-between">
+                  <label class="font-label-sm text-label-sm uppercase font-bold text-outline">Selected Chamber
+                    Doctor</label>
+                  <span class="font-numeric-data-sm text-numeric-data-sm text-primary font-semibold">Chamber Schedule:
+                    Today (Active)</span>
+                </div>
+                <div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between">
+                  <div class="flex items-center gap-space-sm">
+                    <div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+                      <img alt="Doctor avatar" class="w-full h-full object-cover" id="form-doc-img"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrL-4H9CEMfP-7LwXGc_ChEzjeRikfDwNgQe4yjkBxqirkh50_8nw24UII8tmGxwMLeKnhdTbP2mAYFdRisGI_BKM-0nP6fhtb6Ln7ldsQHH4oMYkyiKtBNb4u1GkTof_r5slr3XaRKIrQK4cS3-fw6vhz7_WnqfnBoIr_nFNTCfr-sNjxkP2K4VbgHxW3T-etACfshWnYVurNSvlnJK1k9RE9wjAFhxyJPKqav1zdHTkhPt8h7-n4" />
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="font-headline-sm text-headline-sm text-on-surface font-bold" id="form-doc-name">Prof.
+                        Dr. Rajesh Patel</span>
+                      <span class="font-body-sm text-body-sm text-on-surface-variant" id="form-doc-spec">Chief
+                        Cardiologist • Chamber: Room 302</span>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span class="font-numeric-data-md text-numeric-data-md text-primary font-bold"
+                      id="form-doc-time">04:00 PM - 09:00 PM</span>
+                    <span class="font-label-sm text-label-sm text-secondary font-medium">Sat - Thu Available</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 2. Patient Smart Input Form -->
+              <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
+                <div class="flex items-center justify-between">
+                  <span class="font-label-sm text-label-sm uppercase font-bold text-outline">Patient Registration &amp;
+                    Mobile Lookup</span>
+                  <div class="flex items-center gap-1">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Demonstration Lookups:</span>
+                    <button
+                      class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high"
+                      onclick="simulatePatientLookup('old')">Test: Old (&lt;3mo)</button>
+                    <button
+                      class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high"
+                      onclick="simulatePatientLookup('updated')">Test: &gt;3mo</button>
+                    <button
+                      class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high"
+                      onclick="simulatePatientLookup('new')">Test: New</button>
+                  </div>
+                </div>
+                <!-- Phone Number Search Bar (Instant DB trigger) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div class="flex flex-col gap-1">
+                    <label class="font-label-sm text-label-sm text-on-surface font-semibold">Contact Mobile Number <span
+                        class="text-error">*</span></label>
+                    <div class="relative">
+                      <span
+                        class="absolute left-2.5 top-2.5 font-numeric-data-md text-numeric-data-md text-outline font-semibold">+880</span>
+                      <input
+                        class="w-full pl-14 pr-space-md py-2 rounded-lg bg-surface-container-low font-numeric-data-md text-numeric-data-md text-on-surface outline-none focus:bg-surface-container-lowest shadow-inner"
+                        id="input-phone" oninput="handlePhoneLookup(this.value)" placeholder="1XXXXXXXXX" type="text"
+                        value="1712-889922" />
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="font-label-sm text-label-sm text-on-surface font-semibold">Patient Full Name <span
+                        class="text-error">*</span></label>
+                    <input
+                      class="w-full px-space-md py-2 rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface outline-none focus:bg-surface-container-lowest shadow-inner"
+                      id="input-name" type="text" value="Sarah Jenkins" />
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+                  <div class="flex flex-col gap-1">
+                    <label class="font-label-sm text-label-sm text-on-surface font-semibold">Age (Years) <span
+                        class="text-error">*</span></label>
+                    <input
+                      class="w-full px-space-md py-2 rounded-lg bg-surface-container-low font-numeric-data-md text-numeric-data-md text-on-surface outline-none focus:bg-surface-container-lowest shadow-inner"
+                      id="input-age" type="number" value="34" />
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="font-label-sm text-label-sm text-on-surface font-semibold">Gender</label>
+                    <div class="flex items-center gap-1 h-10">
+                      <label
+                        class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container cursor-pointer font-label-md text-label-md">
+                        <input class="accent-primary" name="gender" type="radio" value="male" />
+                        <span>Male</span>
+                      </label>
+                      <label
+                        class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary text-on-primary cursor-pointer font-label-md text-label-md">
+                        <input checked="" class="accent-primary" name="gender" type="radio" value="female" />
+                        <span>Female</span>
+                      </label>
+                      <label
+                        class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container cursor-pointer font-label-md text-label-md">
+                        <input class="accent-primary" name="gender" type="radio" value="other" />
+                        <span>Other</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="font-label-sm text-label-sm text-on-surface font-semibold">Consultation Date</label>
+                    <input
+                      class="w-full px-space-md py-2 rounded-lg bg-surface-container-low font-numeric-data-md text-numeric-data-md text-on-surface outline-none focus:bg-surface-container-lowest shadow-inner"
+                      type="date" value="2025-02-24" />
+                  </div>
+                </div>
+                <!-- SMART PATIENT HISTORY LOOKUP DISPLAY BOX -->
+                <div class="p-space-md rounded-xl bg-secondary-container/20 flex flex-col gap-2"
+                  id="patient-status-card">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-secondary text-[20px]"
+                        id="patient-status-icon">verified</span>
+                      <span class="font-headline-sm text-headline-sm text-secondary font-bold"
+                        id="patient-status-title">Old Patient (Regular Rate Applied)</span>
+                    </div>
+                    <span
+                      class="px-2 py-0.5 rounded-full bg-secondary text-on-secondary font-label-sm text-label-sm font-semibold"
+                      id="patient-status-pill">Previous Visit &lt; 3 Months</span>
+                  </div>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant" id="patient-status-desc">
+                    System verified previous prescription &amp; consultation on <span
+                      class="font-semibold text-on-surface">18-Jan-2025 (37 days ago)</span> under <span
+                      class="font-semibold text-on-surface">PID-80214</span>. Eligible for Old Patient concession rate.
+                  </p>
+                  <div class="pt-2 flex items-center justify-between">
+                    <span class="font-label-sm text-label-sm text-outline">Chamber Duration: Today (04:00 PM to 09:00
+                      PM)</span>
+                    <div class="flex items-center gap-2">
+                      <span class="font-label-sm text-label-sm text-on-surface-variant">Rate Difference
+                        Concession:</span>
+                      <span
+                        class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-numeric-data-sm text-numeric-data-sm font-bold"
+                        id="fee-concession-pill">-৳ 500 Discount</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Right Panel: Financial Ledger & Token Generation -->
+            <div class="w-full lg:w-5/12 flex flex-col gap-space-md">
+              <!-- Immediate Token Slip Card -->
+              <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
+                <div class="flex items-center justify-between">
+                  <span class="font-label-sm text-label-sm uppercase font-bold text-outline">Token Generation
+                    Counter</span>
+                  <span
+                    class="px-2 py-0.5 rounded bg-surface-container font-numeric-data-sm text-numeric-data-sm text-primary font-bold">Token
+                    Counter #04</span>
+                </div>
+                <div
+                  class="p-space-md rounded-xl bg-gradient-to-br from-surface-container to-surface-container-low flex items-center justify-between">
+                  <div class="flex flex-col">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Queue Serial Token</span>
+                    <span class="font-display-lg text-display-lg text-primary font-black tracking-tight leading-none"
+                      id="live-serial-number">SL #14</span>
+                    <span class="font-body-sm text-body-sm text-secondary font-semibold mt-1">Est. Waiting Time: ~12
+                      Mins</span>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span class="font-label-sm text-label-sm text-outline">Registered Patient ID</span>
+                    <span class="font-numeric-data-lg text-numeric-data-lg text-on-surface font-bold"
+                      id="display-pid">PID-80214</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline-variant font-mono">HASH:
+                      98FC-2025</span>
+                  </div>
+                </div>
+                <!-- Fee Calculation Ledger -->
+                <div class="flex flex-col gap-2 font-body-sm text-body-sm">
+                  <div class="flex items-center justify-between py-1">
+                    <span class="text-on-surface-variant">Consultation Fee Base (Standard):</span>
+                    <span class="font-numeric-data-md text-numeric-data-md text-on-surface" id="ledger-base-fee">৳
+                      1,200</span>
+                  </div>
+                  <div class="flex items-center justify-between py-1">
+                    <span class="text-on-surface-variant">Patient Type Discount:</span>
+                    <span class="font-numeric-data-md text-numeric-data-md text-secondary font-semibold"
+                      id="ledger-discount">-৳ 500</span>
+                  </div>
+                  <div class="flex items-center justify-between py-1">
+                    <span class="text-on-surface-variant">Hospital Service &amp; Triage Charge:</span>
+                    <span class="font-numeric-data-md text-numeric-data-md text-on-surface">৳ 0.00 (Included)</span>
+                  </div>
+                  <div class="h-px bg-surface-container-high my-1"></div>
+                  <div class="flex items-center justify-between py-1">
+                    <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Net Total Amount:</span>
+                    <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-black"
+                      id="ledger-net-total">৳ 700</span>
+                  </div>
+                </div>
+                <!-- Payment Mode Selection -->
+                <div class="flex flex-col gap-1.5">
+                  <label class="font-label-sm text-label-sm text-outline font-semibold">Payment Tender Mode</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      class="py-2 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold flex items-center justify-center gap-1 shadow-sm">
+                      <span class="material-symbols-outlined text-[16px]">payments</span> Cash
+                    </button>
+                    <button
+                      class="py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-md text-label-md font-semibold flex items-center justify-center gap-1">
+                      <span class="material-symbols-outlined text-[16px]">credit_card</span> Card POS
+                    </button>
+                    <button
+                      class="py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-md text-label-md font-semibold flex items-center justify-center gap-1">
+                      <span class="material-symbols-outlined text-[16px]">qr_code_2</span> MFS (bKash)
+                    </button>
+                  </div>
+                </div>
+                <!-- Action Buttons Dual Workflow -->
+                <div class="flex flex-col gap-2 pt-2" id="action-container-live">
+                  <button
+                    class="w-full py-3 px-space-md rounded-xl bg-primary text-on-primary hover:bg-primary-container font-label-md text-label-md font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+                    onclick="executeAction('complete_live')">
+                    <span class="material-symbols-outlined text-[20px]">print</span>
+                    <span>Confirm Encounter &amp; Print Slip [F10]</span>
+                  </button>
+                  <button
+                    class="w-full py-2 px-space-md rounded-xl bg-surface-container-low text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container flex items-center justify-center gap-2"
+                    onclick="toggleA4Modal()">
+                    <span class="material-symbols-outlined text-[18px]">preview</span>
+                    <span>Preview Live Slip Handover Voucher</span>
+                  </button>
+                </div>
+                <div class="hidden flex flex-col gap-2 pt-2" id="action-container-pre">
+                  <button
+                    class="w-full py-3 px-space-md rounded-xl bg-tertiary text-on-tertiary hover:bg-tertiary-container font-label-md text-label-md font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+                    onclick="executeAction('complete_pre')">
+                    <span class="material-symbols-outlined text-[20px]">save</span>
+                    <span>Complete Booking &amp; Push to Pre-Record [F10]</span>
+                  </button>
+                  <p class="font-body-sm text-body-sm text-outline text-center">Stores appointment with Pending status.
+                    Voucher slip printed upon patient arrival.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- VIEW 4: PRE-RECORD (PENDING SCHEDULED ENCOUNTERS) -->
+          <div class="hidden flex flex-col gap-space-md" id="view-prerecord">
+            <div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-primary text-[20px]">pending_actions</span>
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Pending Scheduled Encounters
+                  (Pre-Record Queue)</span>
+                <span
+                  class="px-2 py-0.5 rounded-full bg-surface-container text-primary font-numeric-data-sm text-numeric-data-sm font-semibold">3
+                  Uncollected Slips</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1.5 shadow-sm"
+                  onclick="switchMainTab('preap')">
+                  <span class="material-symbols-outlined text-[16px]">add</span> New Advance Booking (F4)
+                </button>
+              </div>
+            </div>
+            <!-- Pre-Record Table / Cards -->
+            <div class="flex flex-col gap-space-sm">
+              <!-- Record 1 -->
+              <div
+                class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+                <div class="flex items-center gap-space-md">
+                  <div
+                    class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-numeric-data-md text-numeric-data-md text-primary font-bold">
+                    01
+                  </div>
+                  <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                      <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Mahmudur Rahman</span>
+                      <span
+                        class="px-2 py-0.2 rounded bg-surface-container text-on-surface font-numeric-data-sm text-numeric-data-sm">PID-90811</span>
+                      <span
+                        class="px-2 py-0.2 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">Pending
+                        Slip</span>
+                    </div>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant">Phone: +880 1715-092288 • Age: 52y,
+                      Male</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-space-xl">
+                  <div class="flex flex-col">
+                    <span class="font-label-sm text-label-sm text-outline">Doctor &amp; Room</span>
+                    <span class="font-body-md text-body-md text-on-surface font-semibold">Prof. Dr. Rajesh Patel (Room
+                      302)</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-primary">Slot: 05:30 PM (Sat-Thu)</span>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span class="font-label-sm text-label-sm text-outline">Due Fee</span>
+                    <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 1,200</span>
+                    <span class="font-label-sm text-label-sm text-outline">New Patient</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1"
+                      onclick="toggleA4Modal()">
+                      <span class="material-symbols-outlined text-[16px]">visibility</span> View Document
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant font-label-md text-label-md font-semibold flex items-center gap-1 shadow-sm"
+                      onclick="markAppointmentDone('Mahmudur Rahman', 'PID-90811', '1200')">
+                      <span class="material-symbols-outlined text-[16px]">check_circle</span> Proceed &amp; Print Slip
+                      (Mark Done)
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- Record 2 -->
+              <div
+                class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+                <div class="flex items-center gap-space-md">
+                  <div
+                    class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-numeric-data-md text-numeric-data-md text-primary font-bold">
+                    02
+                  </div>
+                  <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                      <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Farzana Yeasmin</span>
+                      <span
+                        class="px-2 py-0.2 rounded bg-surface-container text-on-surface font-numeric-data-sm text-numeric-data-sm">PID-90819</span>
+                      <span
+                        class="px-2 py-0.2 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">Pending
+                        Slip</span>
+                    </div>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant">Phone: +880 1819-334411 • Age: 28y,
+                      Female</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-space-xl">
+                  <div class="flex flex-col">
+                    <span class="font-label-sm text-label-sm text-outline">Doctor &amp; Room</span>
+                    <span class="font-body-md text-body-md text-on-surface font-semibold">Dr. Sarah Jenkins (Room
+                      305)</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-primary">Slot: 11:15 AM
+                      (Tomorrow)</span>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span class="font-label-sm text-label-sm text-outline">Due Fee</span>
+                    <span class="font-numeric-data-lg text-numeric-data-lg text-secondary font-bold">৳ 600</span>
+                    <span class="font-label-sm text-label-sm text-secondary">Old Patient</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1"
+                      onclick="toggleA4Modal()">
+                      <span class="material-symbols-outlined text-[16px]">visibility</span> View Document
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant font-label-md text-label-md font-semibold flex items-center gap-1 shadow-sm"
+                      onclick="markAppointmentDone('Farzana Yeasmin', 'PID-90819', '600')">
+                      <span class="material-symbols-outlined text-[16px]">check_circle</span> Proceed &amp; Print Slip
+                      (Mark Done)
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- Record 3 -->
+              <div
+                class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+                <div class="flex items-center gap-space-md">
+                  <div
+                    class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-numeric-data-md text-numeric-data-md text-primary font-bold">
+                    03
+                  </div>
+                  <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                      <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Zubair Al-Mamun</span>
+                      <span
+                        class="px-2 py-0.2 rounded bg-surface-container text-on-surface font-numeric-data-sm text-numeric-data-sm">PID-90822</span>
+                      <span
+                        class="px-2 py-0.2 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">Pending
+                        Slip</span>
+                    </div>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant">Phone: +880 1912-774400 • Age: 41y,
+                      Male</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-space-xl">
+                  <div class="flex flex-col">
+                    <span class="font-label-sm text-label-sm text-outline">Doctor &amp; Room</span>
+                    <span class="font-body-md text-body-md text-on-surface font-semibold">Dr. Marcus Vance (Room
+                      410)</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-primary">Slot: 06:45 PM (Today)</span>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span class="font-label-sm text-label-sm text-outline">Due Fee</span>
+                    <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 1,500</span>
+                    <span class="font-label-sm text-label-sm text-outline">New Patient</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1"
+                      onclick="toggleA4Modal()">
+                      <span class="material-symbols-outlined text-[16px]">visibility</span> View Document
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant font-label-md text-label-md font-semibold flex items-center gap-1 shadow-sm"
+                      onclick="markAppointmentDone('Zubair Al-Mamun', 'PID-90822', '1500')">
+                      <span class="material-symbols-outlined text-[16px]">check_circle</span> Proceed &amp; Print Slip
+                      (Mark Done)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- VIEW 5: DIRECTORY (COMPLETED DONE ENCOUNTERS REGISTRY) -->
+          <div class="hidden flex flex-col gap-space-md" id="view-directory">
+            <div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-secondary text-[20px]">inventory_2</span>
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Appointment Directory
+                  (Completed Encounters)</span>
+                <span
+                  class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-numeric-data-sm text-numeric-data-sm font-semibold">38
+                  Finalized Today</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  class="px-space-md py-1.5 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface outline-none"
+                  placeholder="Search registry by PID, patient name..." type="text" />
+                <button
+                  class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px]">filter_list</span> Filter
+                </button>
+                <button
+                  class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px]">file_download</span> Export
+                </button>
+              </div>
+            </div>
+            <!-- Directory Data Table -->
+            <div class="rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
+              <div
+                class="grid grid-cols-12 bg-surface-container-low px-space-md py-2.5 font-label-sm text-label-sm uppercase font-semibold text-outline">
+                <div class="col-span-1">Token #</div>
+                <div class="col-span-2">Patient ID &amp; Name</div>
+                <div class="col-span-3">Doctor &amp; Chamber</div>
+                <div class="col-span-2">Encounter Mode</div>
+                <div class="col-span-2 text-right">Fee Paid</div>
+                <div class="col-span-2 text-right">Actions</div>
+              </div>
+              <div class="flex flex-col divide-y divide-surface-container-low">
+                <!-- Row 1 -->
+                <div
+                  class="grid grid-cols-12 px-space-md py-3 items-center hover:bg-surface-container-low/50 transition-colors">
+                  <div class="col-span-1 font-numeric-data-md text-numeric-data-md font-bold text-primary">SL #13</div>
+                  <div class="col-span-2 flex flex-col">
+                    <span class="font-body-md text-body-md text-on-surface font-semibold">Khadija Akter</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">PID-90820 • 29y, F</span>
+                  </div>
+                  <div class="col-span-3 flex flex-col">
+                    <span class="font-body-md text-body-md text-on-surface font-medium">Prof. Dr. Rajesh Patel</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">Room 302 • Time: 04:30
+                      PM</span>
+                  </div>
+                  <div class="col-span-2">
+                    <span
+                      class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Live-AP
+                      (Done)</span>
+                  </div>
+                  <div class="col-span-2 text-right font-numeric-data-md text-numeric-data-md text-secondary font-bold">
+                    ৳ 700 (Cash)
+                  </div>
+                  <div class="col-span-2 flex items-center justify-end gap-1.5">
+                    <button class="p-1 rounded hover:bg-surface-container text-primary" onclick="toggleA4Modal()"
+                      title="Print Duplicate Slip">
+                      <span class="material-symbols-outlined text-[18px]">print</span>
+                    </button>
+                    <button class="p-1 rounded hover:bg-surface-container text-outline" title="View Audit Log">
+                      <span class="material-symbols-outlined text-[18px]">history</span>
+                    </button>
+                  </div>
+                </div>
+                <!-- Row 2 -->
+                <div
+                  class="grid grid-cols-12 px-space-md py-3 items-center hover:bg-surface-container-low/50 transition-colors">
+                  <div class="col-span-1 font-numeric-data-md text-numeric-data-md font-bold text-primary">SL #12</div>
+                  <div class="col-span-2 flex flex-col">
+                    <span class="font-body-md text-body-md text-on-surface font-semibold">Ashraful Huda</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">PID-90815 • 64y, M</span>
+                  </div>
+                  <div class="col-span-3 flex flex-col">
+                    <span class="font-body-md text-body-md text-on-surface font-medium">Dr. Marcus Vance</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">Room 410 • Time: 05:00
+                      PM</span>
+                  </div>
+                  <div class="col-span-2">
+                    <span
+                      class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Pre-AP
+                      (Done)</span>
+                  </div>
+                  <div class="col-span-2 text-right font-numeric-data-md text-numeric-data-md text-secondary font-bold">
+                    ৳ 1,500 (bKash)
+                  </div>
+                  <div class="col-span-2 flex items-center justify-end gap-1.5">
+                    <button class="p-1 rounded hover:bg-surface-container text-primary" onclick="toggleA4Modal()"
+                      title="Print Duplicate Slip">
+                      <span class="material-symbols-outlined text-[18px]">print</span>
+                    </button>
+                    <button class="p-1 rounded hover:bg-surface-container text-outline" title="View Audit Log">
+                      <span class="material-symbols-outlined text-[18px]">history</span>
+                    </button>
+                  </div>
+                </div>
+                <!-- Row 3 -->
+                <div
+                  class="grid grid-cols-12 px-space-md py-3 items-center hover:bg-surface-container-low/50 transition-colors">
+                  <div class="col-span-1 font-numeric-data-md text-numeric-data-md font-bold text-primary">SL #11</div>
+                  <div class="col-span-2 flex flex-col">
+                    <span class="font-body-md text-body-md text-on-surface font-semibold">Amina Chowdhury</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">PID-90804 • 8y, F</span>
+                  </div>
+                  <div class="col-span-3 flex flex-col">
+                    <span class="font-body-md text-body-md text-on-surface font-medium">Dr. Elena Rostova</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">Room 201 • Time: 10:15
+                      AM</span>
+                  </div>
+                  <div class="col-span-2">
+                    <span
+                      class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Live-AP
+                      (Done)</span>
+                  </div>
+                  <div class="col-span-2 text-right font-numeric-data-md text-numeric-data-md text-secondary font-bold">
+                    ৳ 900 (Card POS)
+                  </div>
+                  <div class="col-span-2 flex items-center justify-end gap-1.5">
+                    <button class="p-1 rounded hover:bg-surface-container text-primary" onclick="toggleA4Modal()"
+                      title="Print Duplicate Slip">
+                      <span class="material-symbols-outlined text-[18px]">print</span>
+                    </button>
+                    <button class="p-1 rounded hover:bg-surface-container text-outline" title="View Audit Log">
+                      <span class="material-symbols-outlined text-[18px]">history</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- MODAL 1: APPOINTMENT TYPE SELECTION POPUP -->
+        <div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden items-center justify-center p-4"
+          id="booking-choice-modal">
+          <div
+            class="w-full max-w-xl rounded-2xl bg-surface-container-lowest shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <!-- Modal Header -->
+            <div class="p-space-lg bg-surface-container-low flex items-center justify-between">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-primary text-[24px]">event_available</span>
+                <div class="flex flex-col">
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold" id="modal-doc-title">Book
+                    Appointment for Prof. Dr. Rajesh Patel (DOC-701)</h3>
+                  <span class="font-body-sm text-body-sm text-on-surface-variant" id="modal-doc-subtitle">Chamber: Room
+                    302 • Visiting Hours: 04:00 PM - 09:00 PM</span>
+                </div>
+              </div>
+              <button class="p-1.5 rounded-full hover:bg-surface-container text-outline hover:text-on-surface"
+                onclick="closeBookingChoiceModal()">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <!-- Modal Body: Choice Cards -->
+            <div class="p-space-lg flex flex-col gap-space-md">
+              <span class="font-label-sm text-label-sm uppercase font-bold text-outline">Select Encounter Workflow
+                Pathway</span>
+              <!-- Choice 1: Live-AP Walk-in -->
+              <button
+                class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container flex items-start gap-space-md text-left transition-all group"
+                onclick="selectPath('liveap')">
+                <div
+                  class="p-3 rounded-xl bg-secondary-container text-on-secondary-container group-hover:scale-105 transition-transform">
+                  <span class="material-symbols-outlined text-[28px]">bolt</span>
+                </div>
+                <div class="flex-1 flex flex-col gap-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-headline-sm text-headline-sm text-on-surface font-bold group-hover:text-primary">⚡
+                      Live-AP </span>
+                    <kbd
+                      class="px-2 py-0.5 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F3</kbd>
+                  </div>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                    Register immediate patient arrival, generate live queue serial token &amp; print token slip with
+                    status marked <span class="font-bold text-secondary">"Done"</span>.
+                  </p>
+                </div>
+              </button>
+              <!-- Choice 2: Pre-AP Advance Booking -->
+              <button
+                class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container flex items-start gap-space-md text-left transition-all group"
+                onclick="selectPath('preap')">
+                <div
+                  class="p-3 rounded-xl bg-primary-container text-on-primary-container group-hover:scale-105 transition-transform">
+                  <span class="material-symbols-outlined text-[28px]">calendar_month</span>
+                </div>
+                <div class="flex-1 flex flex-col gap-1">
+                  <div class="flex items-center justify-between">
+                    <span
+                      class="font-headline-sm text-headline-sm text-on-surface font-bold group-hover:text-primary">📅
+                      Pre-AP (Advance Booking)</span>
+                    <kbd
+                      class="px-2 py-0.5 rounded bg-surface-container-lowest shadow-sm font-shortcut-key text-shortcut-key text-on-surface">F4</kbd>
+                  </div>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                    Book advance consultation slot, store into Pre-Record queue with <span
+                      class="font-bold text-error">"Pending"</span> status for slip printing upon physical arrival.
+                  </p>
+                </div>
+              </button>
+            </div>
+            <!-- Modal Footer -->
+            <div class="p-space-md bg-surface-container-low flex items-center justify-between">
+              <span class="font-label-sm text-label-sm text-outline">Press [Esc] to cancel popup</span>
+              <button
+                class="px-space-md py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-md text-label-md"
+                onclick="closeBookingChoiceModal()">Close</button>
+            </div>
+          </div>
+        </div>
+        <!-- MODAL 2: A4 APPOINTMENT TOKEN & PRESCRIPTION VOUCHER MODAL -->
+        <div class="fixed inset-0 z-50 bg-inverse-surface/50 backdrop-blur-sm hidden items-center justify-center p-4"
+          id="a4-voucher-modal">
+          <div
+            class="w-full max-w-2xl max-h-[90vh] rounded-2xl bg-surface-container-lowest shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <!-- Top Action Strip -->
+            <div class="px-space-md py- space-sm bg-surface-container-low flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">print</span>
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">A4 Thermal &amp; Voucher Print
+                  Preview</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center gap-1 shadow-sm"
+                  onclick="printVoucher()">
+                  <span class="material-symbols-outlined text-[16px]">print</span> Print Voucher (F9)
+                </button>
+                <button class="p-1 rounded hover:bg-surface-container text-outline" onclick="toggleA4Modal()">
+                  <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+            </div>
+            <!-- Printable A4 Content Mock -->
+            <div class="p-space-lg overflow-y-auto flex-1 bg-surface-container-low/40">
+              <div
+                class="w-full bg-surface-container-lowest p-space-xl rounded-xl shadow-md flex flex-col gap-space-md">
+                <!-- Hospital Header -->
+                <div class="flex items-start justify-between pb-space-md">
+                  <div class="flex flex-col">
+                    <h2 class="font-headline-lg text-headline-lg text-primary font-black leading-tight">CLINICALPRO HMS
+                      PRECISION SUITE</h2>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Central Specialized Hospital &amp;
+                      Diagnostic Complex</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">Chamber Block-B, Level 3 •
+                      Emergency Hotline: 10678</span>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span
+                      class="px-3 py-1 rounded bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold uppercase">OPD
+                      TOKEN SLIP</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline mt-1">Date: 24-Feb-2025 • 10:42
+                      AM</span>
+                  </div>
+                </div>
+                <!-- Token Number Huge Badge -->
+                <div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between">
+                  <div class="flex flex-col">
+                    <span class="font-label-sm text-label-sm uppercase font-bold text-outline">Queue Serial Token</span>
+                    <span class="font-display-lg text-display-lg text-primary font-black">SERIAL #14</span>
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <!-- SVG Barcode Mock -->
+                    <svg class="h-10 w-48" viewbox="0 0 200 40">
+                      <rect fill="currentColor" height="40" width="4" x="0" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="2" x="8" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="6" x="14" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="2" x="24" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="8" x="30" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="4" x="42" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="2" x="50" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="6" x="56" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="8" x="68" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="4" x="80" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="6" x="90" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="2" x="100" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="8" x="108" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="4" x="120" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="2" x="128" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="6" x="134" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="8" x="144" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="2" x="156" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="6" x="162" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="4" x="174" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="8" x="184" y="0"></rect>
+                      <rect fill="currentColor" height="40" width="4" x="196" y="0"></rect>
+                    </svg>
+                    <span
+                      class="font-numeric-data-sm text-numeric-data-sm font-mono tracking-widest text-outline">PID-80214-SL14</span>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    <span class="font-label-sm text-label-sm text-outline">Chamber Room</span>
+                    <span class="font-headline-md text-headline-md text-on-surface font-bold">Room 302</span>
+                  </div>
+                </div>
+                <!-- Doctor & Patient 2-Column Info -->
+                <div class="grid grid-cols-2 gap-space-lg">
+                  <div class="p-space-sm rounded-lg bg-surface-container-low/50 flex flex-col gap-1">
+                    <span class="font-label-sm text-label-sm uppercase font-bold text-outline">Consulting
+                      Specialist</span>
+                    <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Prof. Dr. Rajesh
+                      Patel</span>
+                    <span class="font-body-sm text-body-sm text-primary font-medium">Chief Interventionist &amp;
+                      Cardiologist</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-outline">Visiting Time: 04:00 PM - 09:00
+                      PM</span>
+                  </div>
+                  <div class="p-space-sm rounded-lg bg-surface-container-low/50 flex flex-col gap-1">
+                    <span class="font-label-sm text-label-sm uppercase font-bold text-outline">Patient
+                      Particulars</span>
+                    <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Sarah Jenkins
+                      (PID-80214)</span>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant">Female • 34 Years • Mobile: +880
+                      1712-889922</span>
+                    <span class="font-numeric-data-sm text-numeric-data-sm text-secondary font-semibold">Category: Old
+                      Patient Concession Rate</span>
+                  </div>
+                </div>
+                <!-- Financial Statement -->
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between font-label-md text-label-md text-outline pb-1">
+                    <span>Description</span>
+                    <span>Amount (BDT)</span>
+                  </div>
+                  <div class="flex items-center justify-between font-body-sm text-body-sm">
+                    <span class="text-on-surface">Consultation Fee (Dr. Rajesh Patel)</span>
+                    <span class="font-numeric-data-md text-numeric-data-md text-on-surface">৳ 1,200.00</span>
+                  </div>
+                  <div class="flex items-center justify-between font-body-sm text-body-sm">
+                    <span class="text-secondary font-medium">Concession / Old Patient Waiver (&lt;3 Months)</span>
+                    <span class="font-numeric-data-md text-numeric-data-md text-secondary font-semibold">-৳
+                      500.00</span>
+                  </div>
+                  <div class="pt-2 flex items-center justify-between">
+                    <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Net Total Paid:</span>
+                    <span class="font-numeric-data-lg text-numeric-data-lg text-primary font-bold">৳ 700.00</span>
+                  </div>
+                </div>
+                <!-- Cashier Signature & Stamp -->
+              </div>
+            </div>
+            <!-- Footer Buttons -->
+            <div class="px-space-md py-space-sm bg-surface-container-low flex items-center justify-between">
+              <span class="font-label-sm text-label-sm text-outline">Ready for 80mm POS Thermal or A4 LaserJet
+                Slip</span>
+              <button
+                class="px-space-md py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md"
+                onclick="toggleA4Modal()">Close Slip Preview</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Client-side Interactive Workstation Logic -->
+      <script>
+        let currentActiveTab = 'dashboard';
+        let activeDoctor = {
+          name: 'Prof. Dr. Rajesh Patel',
+          id: 'DOC-701',
+          chamber: 'Room 302',
+          newFee: '1200',
+          oldFee: '700',
+          time: '04:00 PM - 09:00 PM',
+          image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBrL-4H9CEMfP-7LwXGc_ChEzjeRikfDwNgQe4yjkBxqirkh50_8nw24UII8tmGxwMLeKnhdTbP2mAYFdRisGI_BKM-0nP6fhtb6Ln7ldsQHH4oMYkyiKtBNb4u1GkTof_r5slr3XaRKIrQK4cS3-fw6vhz7_WnqfnBoIr_nFNTCfr-sNjxkP2K4VbgHxW3T-etACfshWnYVurNSvlnJK1k9RE9wjAFhxyJPKqav1zdHTkhPt8h7-n4'
+        };
+
+        function switchMainTab(tabKey) {
+          currentActiveTab = tabKey;
+          const views = ['dashboard', 'appointment-form', 'prerecord', 'directory'];
+
+          // Hide all main containers
+          views.forEach(v => {
+            const el = document.getElementById('view-' + v);
+            if (el) el.classList.add('hidden');
+          });
+
+          // Reset button styles
+          const tabBtns = ['dashboard', 'liveap', 'preap', 'prerecord', 'directory'];
+          tabBtns.forEach(t => {
+            const btn = document.getElementById('tabBtn-' + t);
+            if (btn) {
+              btn.className = "flex items-center gap-2 px-space-md py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all";
+            }
+          });
+
+          const activeBtn = document.getElementById('tabBtn-' + tabKey);
+          if (activeBtn) {
+            activeBtn.className = "flex items-center gap-2 px-space-md py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm transition-all";
+          }
+
+          if (tabKey === 'dashboard') {
+            document.getElementById('view-dashboard').classList.remove('hidden');
+          } else if (tabKey === 'liveap') {
+            document.getElementById('view-appointment-form').classList.remove('hidden');
+            setupFormMode('live');
+          } else if (tabKey === 'preap') {
+            document.getElementById('view-appointment-form').classList.remove('hidden');
+            setupFormMode('pre');
+          } else if (tabKey === 'prerecord') {
+            document.getElementById('view-prerecord').classList.remove('hidden');
+          } else if (tabKey === 'directory') {
+            document.getElementById('view-directory').classList.remove('hidden');
+          }
+        }
+
+        function setupFormMode(mode) {
+          const bannerTitle = document.getElementById('form-mode-title');
+          const bannerSub = document.getElementById('form-mode-sub');
+          const bannerIcon = document.getElementById('form-mode-icon');
+          const statusBadge = document.getElementById('form-badge-status');
+          const liveAction = document.getElementById('action-container-live');
+          const preAction = document.getElementById('action-container-pre');
+
+          if (mode === 'live') {
+            bannerTitle.innerText = "Live-AP Walk-in Consultation Intake";
+            bannerSub.innerText = "Immediate counter arrival • Auto-generates serial token & live queue pass";
+            bannerIcon.innerText = "bolt";
+            bannerIcon.className = "material-symbols-outlined text-primary text-[24px]";
+            statusBadge.innerText = "Status: Done";
+            statusBadge.className = "px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wider";
+            liveAction.classList.remove('hidden');
+            preAction.classList.add('hidden');
+          } else {
+            bannerTitle.innerText = "Pre-AP Scheduled Advance Consultation Booking";
+            bannerSub.innerText = "Advance appointment reservation • Queued in Pre-Record with Pending slip status";
+            bannerIcon.innerText = "calendar_month";
+            bannerIcon.className = "material-symbols-outlined text-tertiary text-[24px]";
+            statusBadge.innerText = "Status: Pending";
+            statusBadge.className = "px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold uppercase tracking-wider";
+            liveAction.classList.add('hidden');
+            preAction.classList.remove('hidden');
+          }
+        }
+
+        function openBookingChoiceModal(name, id, room, newFee, oldFee, time) {
+          activeDoctor = { name, id, room, newFee, oldFee, time };
+          document.getElementById('modal-doc-title').innerText = `Book Appointment for ${name} (${id})`;
+          document.getElementById('modal-doc-subtitle').innerText = `Chamber: ${room} • Visiting Hours: ${time}`;
+          document.getElementById('booking-choice-modal').classList.remove('hidden');
+          document.getElementById('booking-choice-modal').classList.add('flex');
+        }
+
+        function closeBookingChoiceModal() {
+          document.getElementById('booking-choice-modal').classList.add('hidden');
+          document.getElementById('booking-choice-modal').classList.remove('flex');
+        }
+
+        function selectPath(pathKey) {
+          closeBookingChoiceModal();
+          // Update doctor in form
+          document.getElementById('form-doc-name').innerText = activeDoctor.name;
+          document.getElementById('form-doc-spec').innerText = `Consultant Specialist • Chamber: ${activeDoctor.room}`;
+          document.getElementById('form-doc-time').innerText = activeDoctor.time;
+          switchMainTab(pathKey);
+        }
+
+        // Smart Lookup Demonstrator
+        function simulatePatientLookup(type) {
+          const statusCard = document.getElementById('patient-status-card');
+          const statusIcon = document.getElementById('patient-status-icon');
+          const statusTitle = document.getElementById('patient-status-title');
+          const statusPill = document.getElementById('patient-status-pill');
+          const statusDesc = document.getElementById('patient-status-desc');
+          const concessionPill = document.getElementById('fee-concession-pill');
+          const displayPid = document.getElementById('display-pid');
+          const baseFee = document.getElementById('ledger-base-fee');
+          const discount = document.getElementById('ledger-discount');
+          const netTotal = document.getElementById('ledger-net-total');
+          const phoneInput = document.getElementById('input-phone');
+          const nameInput = document.getElementById('input-name');
+
+          if (type === 'old') {
+            phoneInput.value = "1712-889922";
+            nameInput.value = "Sarah Jenkins";
+            displayPid.innerText = "PID-80214";
+            statusCard.className = "p-space-md rounded-xl bg-secondary-container/20 flex flex-col gap-2";
+            statusIcon.innerText = "verified";
+            statusIcon.className = "material-symbols-outlined text-secondary text-[20px]";
+            statusTitle.innerText = "Old Patient (Regular Rate Applied)";
+            statusTitle.className = "font-headline-sm text-headline-sm text-secondary font-bold";
+            statusPill.innerText = "Previous Visit < 3 Months";
+            statusPill.className = "px-2 py-0.5 rounded-full bg-secondary text-on-secondary font-label-sm text-label-sm font-semibold";
+            statusDesc.innerHTML = 'System verified previous prescription & consultation on <span class="font-semibold text-on-surface">18-Jan-2025 (37 days ago)</span> under <span class="font-semibold text-on-surface">PID-80214</span>. Eligible for Old Patient concession rate.';
+            concessionPill.innerText = "-৳ 500 Discount";
+            concessionPill.className = "px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-numeric-data-sm text-numeric-data-sm font-bold";
+            baseFee.innerText = "৳ 1,200";
+            discount.innerText = "-৳ 500";
+            netTotal.innerText = "৳ 700";
+          } else if (type === 'updated') {
+            phoneInput.value = "1821-447711";
+            nameInput.value = "Rezaul Karim";
+            displayPid.innerText = "PID-67104";
+            statusCard.className = "p-space-md rounded-xl bg-surface-container flex flex-col gap-2";
+            statusIcon.innerText = "update";
+            statusIcon.className = "material-symbols-outlined text-primary text-[20px]";
+            statusTitle.innerText = "Updated New (Last Visit > 3 Months Ago)";
+            statusTitle.className = "font-headline-sm text-headline-sm text-primary font-bold";
+            statusPill.innerText = "Last Consult: 6 Months Ago";
+            statusPill.className = "px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold";
+            statusDesc.innerHTML = 'Last consultation was on <span class="font-semibold text-on-surface">12-Aug-2024</span> (> 90 days threshold). As per policy, regular New Patient consultation rate applies.';
+            concessionPill.innerText = "Standard Rate Applied";
+            concessionPill.className = "px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-numeric-data-sm text-numeric-data-sm font-bold";
+            baseFee.innerText = "৳ 1,200";
+            discount.innerText = "৳ 0.00";
+            netTotal.innerText = "৳ 1,200";
+          } else {
+            phoneInput.value = "1955-001122";
+            nameInput.value = "Nafis Ahmed";
+            displayPid.innerText = "PID-90827";
+            statusCard.className = "p-space-md rounded-xl bg-primary-container/10 flex flex-col gap-2";
+            statusIcon.innerText = "person_add";
+            statusIcon.className = "material-symbols-outlined text-primary text-[20px]";
+            statusTitle.innerText = "New Patient Registration";
+            statusTitle.className = "font-headline-sm text-headline-sm text-primary font-bold";
+            statusPill.innerText = "Fresh Record Created";
+            statusPill.className = "px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-semibold";
+            statusDesc.innerHTML = 'No prior clinic visits found for this mobile. Auto-generated fresh Medical Record Number <span class="font-semibold text-on-surface">PID-90827</span> with Standard New Patient Rate.';
+            concessionPill.innerText = "Standard New Rate";
+            concessionPill.className = "px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-numeric-data-sm text-numeric-data-sm font-bold";
+            baseFee.innerText = "৳ 1,200";
+            discount.innerText = "৳ 0.00";
+            netTotal.innerText = "৳ 1,200";
+          }
+        }
+
+        function handlePhoneLookup(val) {
+          if (val.includes("8899")) {
+            simulatePatientLookup('old');
+          } else if (val.includes("4477")) {
+            simulatePatientLookup('updated');
+          }
+        }
+
+        function toggleA4Modal() {
+          const modal = document.getElementById('a4-voucher-modal');
+          if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+          } else {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+          }
+        }
+
+        function printVoucher() {
+          window.print();
+        }
+
+        function executeAction(type) {
+          if (type === 'complete_live') {
+            toggleA4Modal();
+          } else {
+            switchMainTab('prerecord');
+          }
+        }
+
+        function markAppointmentDone(name, pid, fee) {
+          alert(`Appointment for ${name} (${pid}) marked DONE. Payment ৳${fee} collected at Counter #04.`);
+          switchMainTab('directory');
+        }
+
+        // Keyboard shortcut listeners for Desktop feel
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'F2') {
+            e.preventDefault();
+            switchMainTab('dashboard');
+          } else if (e.key === 'F3') {
+            e.preventDefault();
+            switchMainTab('liveap');
+          } else if (e.key === 'F4') {
+            e.preventDefault();
+            switchMainTab('preap');
+          } else if (e.key === 'F6') {
+            e.preventDefault();
+            switchMainTab('prerecord');
+          } else if (e.key === 'F7') {
+            e.preventDefault();
+            switchMainTab('directory');
+          } else if (e.key === 'Escape') {
+            closeBookingChoiceModal();
+            document.getElementById('a4-voucher-modal').classList.add('hidden');
+            document.getElementById('a4-voucher-modal').classList.remove('flex');
+          }
+        });
+      </script>
+    </main>
+  </div>
+  <div aria-hidden="true" data-snapdom-sandbox="true" id="snapdom-sandbox"
+    style="position: absolute; left: -9999px; top: -9999px; width: 0px; height: 0px; overflow: hidden;"></div>
+</body>
+
+</html>
