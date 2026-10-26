@@ -1,6 +1,6 @@
 {
   "name": "hmss-desktop",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Local-first hospital management system",
   "main": "main.cjs",
   "scripts": {
