@@ -1,0 +1,64 @@
+{
+  "doctors": [
+    {
+      "id": "D-001",
+      "name": "Dr. Amina Rahman",
+      "title": "MBBS, FCPS",
+      "specialty": "Internal Medicine",
+      "contact": "01700000001",
+      "visits": "09:00 - 13:00",
+      "newPrice": 800,
+      "oldPrice": 500,
+      "photo": ""
+    },
+    {
+      "id": "D-002",
+      "name": "Dr. Farhan Ahmed",
+      "title": "MBBS, MS",
+      "specialty": "Cardiology",
+      "contact": "01700000002",
+      "visits": "16:00 - 20:00",
+      "newPrice": 1000,
+      "oldPrice": 700,
+      "photo": ""
+    }
+  ],
+  "appointments": [
+    {
+      "id": "APT-MVES6B8J-Z96",
+      "recordId": "VIS-MVES6B8K-V92",
+      "patientId": "PAT-MVES6B8K-5DS",
+      "patientName": "Patient CC",
+      "contact": "01000000000",
+      "age": 44,
+      "gender": "Male",
+      "doctorId": "D-001",
+      "visitAt": "2026-10-19T11:30:00.000Z",
+      "fromTime": "17:10",
+      "toTime": "06:09",
+      "price": 800,
+      "patientType": "New patient",
+      "status": "Done",
+      "createdAt": "2026-10-19T04:55:12.740Z",
+      "historyRecordId": ""
+    },
+    {
+      "id": "APT-MVERVETH-G6F",
+      "recordId": "VIS-MVERVETH-EG2",
+      "patientId": "PAT-MVERVETH-FSL",
+      "patientName": "Patient V",
+      "contact": "01777777777",
+      "age": 33,
+      "gender": "Male",
+      "doctorId": "D-002",
+      "visitAt": "2026-10-19T04:45:00.000Z",
+      "fromTime": "18:30",
+      "toTime": "21:00",
+      "price": 1000,
+      "patientType": "New patient",
+      "status": "Done",
+      "createdAt": "2026-10-19T04:46:44.165Z",
+      "historyRecordId": ""
+    }
+  ]
+}

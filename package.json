@@ -1,12 +1,13 @@
 {
   "name": "hmss-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Local-first hospital management system",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
+    "test": "node --test",
     "pack": "electron-builder --win nsis --x64",
-    "publish": "electron-builder --win nsis --x64 --publish always"
+    "publish": "electron-builder --win nsis --x64 --publish always && node scripts/ensure-update-metadata.cjs"
   },
   "devDependencies": {
     "electron": "^44.9.1",
@@ -16,11 +17,13 @@
     "electron@44.9.1": true
   },
   "dependencies": {
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.9",
+    "jsbarcode": "^3.12.1",
+    "three": "^0.160.1"
   },
   "build": {
     "appId": "com.kabirhat.privatehospital",
-    "productName": "Kabirhat Private Hospital",
+    "productName": "Kabirhat Private Hospital & Normal Delivery Center",
     "directories": {
       "output": "release"
     },
@@ -30,9 +33,11 @@
       "js/**/*",
       "styles/**/*",
       "UI/**/*",
+      "site_assets/**/*",
       "package.json"
     ],
     "win": {
+      "icon": "site_assets/Hospital_Logo.ico",
       "target": [
         {
           "target": "nsis",
@@ -41,7 +46,7 @@
           ]
         }
       ],
-      "artifactName": "Kabirhat-Private-Hospital-Setup-${version}.${ext}"
+      "artifactName": "Kabirhat-Private-Hospital-Normal-Delivery-Center-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -54,7 +59,8 @@
       "provider": "github",
       "owner": "ceo-uploads",
       "repo": "HMS",
-      "releaseType": "release"
+      "releaseType": "release",
+      "publishAutoUpdate": true
     }
   }
 }

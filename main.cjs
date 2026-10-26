@@ -4,9 +4,11 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const { autoUpdater } = require('electron-updater');
+const { loadDatabase, saveDatabase } = require('./js/db-management');
 
 let mainWindow;
-let dataFile;
+let databaseDirectory;
+let legacyDatabaseFile;
 let assetsDirectory;
 const updateState = {
   appVersion: app.getVersion(),
@@ -31,6 +33,14 @@ function publishUpdateState(message, status, details = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:state', { ...updateState, logs: [...updateState.logs] });
 }
 
+function readableUpdaterError(error) {
+  const message = String(error?.message || error || 'Unknown update error');
+  if (/Cannot find latest\.yml/i.test(message)) {
+    return 'The latest GitHub release is missing latest.yml. Publish the update again with npm run publish.';
+  }
+  return message.split(/\r?\n/)[0].slice(0, 500);
+}
+
 function configureAutoUpdater() {
   updateState.supported = app.isPackaged;
   updateState.status = app.isPackaged ? 'idle' : 'unsupported';
@@ -44,7 +54,10 @@ function configureAutoUpdater() {
   autoUpdater.on('update-not-available', info => publishUpdateState(`You are up to date. Latest version is ${info.version}.`, 'not-available', { availableVersion: null, latestVersion: info.version, error: null }));
   autoUpdater.on('download-progress', progress => publishUpdateState(`Downloading update: ${Math.round(progress.percent)}% (${progress.transferred} of ${progress.total} bytes).`, 'downloading', { percent: progress.percent, transferred: progress.transferred, total: progress.total }));
   autoUpdater.on('update-downloaded', info => publishUpdateState(`Version ${info.version} is ready to install. Restart to apply it.`, 'downloaded', { availableVersion: info.version, percent: 100, error: null }));
-  autoUpdater.on('error', error => publishUpdateState(`Update error: ${error.message}`, 'error', { error: error.message }));
+    autoUpdater.on('error', error => {
+      const message = readableUpdaterError(error);
+      publishUpdateState(message, 'error', { error: message });
+    });
 }
 
 function initialData() {
@@ -68,26 +81,16 @@ function initialData() {
       { id: 'C-03', name: 'Cabin 03', price: 3000 }, { id: 'C-04', name: 'Cabin 04', price: 3000 },
       { id: 'C-05', name: 'Cabin 05', price: 3500 }, { id: 'C-06', name: 'Cabin 06', price: 3500 }
     ],
-    labOrders: [], appointments: [], bookings: []
+    indoorServices: [], labOrders: [], appointments: [], bookings: []
   };
 }
 
 async function loadData() {
-  try {
-    return JSON.parse(await fs.readFile(dataFile, 'utf8'));
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-    const data = initialData();
-    await saveData(data);
-    return data;
-  }
+  return loadDatabase({ directory: databaseDirectory, legacyFile: legacyDatabaseFile, defaults: initialData });
 }
 
 async function saveData(data) {
-  const temporary = `${dataFile}.tmp`;
-  await fs.writeFile(temporary, JSON.stringify(data, null, 2), 'utf8');
-  await fs.rename(temporary, dataFile);
-  return true;
+  return saveDatabase({ directory: databaseDirectory, data });
 }
 
 function createWindow() {
@@ -97,6 +100,7 @@ function createWindow() {
     minWidth: 760,
     minHeight: 620,
     frame: false,
+    icon: path.join(__dirname, 'site_assets', 'Hospital_Logo.ico'),
     backgroundColor: '#f5f7f6',
     show: false,
     webPreferences: {
@@ -112,9 +116,14 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-	app.setPath('userData', path.join(app.getPath('appData'), 'hmss-desktop'));
-  dataFile = path.join(app.getPath('userData'), 'hospital-data.json');
-  assetsDirectory = path.join(app.getPath('userData'), 'assets');
+  app.setPath('userData', path.join(app.getPath('appData'), 'hmss-desktop'));
+  databaseDirectory = app.isPackaged
+    ? path.join(app.getPath('userData'), 'Database')
+    : path.join(__dirname, 'Database');
+  legacyDatabaseFile = path.join(app.getPath('userData'), 'hospital-data.json');
+  assetsDirectory = app.isPackaged
+    ? path.join(app.getPath('userData'), 'assets')
+    : path.join(__dirname, 'assets');
   await fs.mkdir(assetsDirectory, { recursive: true });
 
   ipcMain.handle('data:load', loadData);
@@ -122,6 +131,17 @@ app.whenReady().then(async () => {
   ipcMain.handle('window:minimize', () => mainWindow?.minimize());
   ipcMain.handle('window:toggle-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize());
   ipcMain.handle('window:close', () => mainWindow?.close());
+  ipcMain.handle('document:save-pdf', async (_event, pageSize) => {
+    if (!['A4', 'A5'].includes(pageSize)) throw new Error('Unsupported document page size.');
+    const destination = path.join(app.getPath('downloads'), `${pageSize === 'A5' ? 'Test-Cash-Memo' : 'Hospital-Bill'}-${Date.now()}.pdf`);
+    const pdf = await mainWindow.webContents.printToPDF({
+      pageSize,
+      printBackground: true,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 }
+    });
+    await fs.writeFile(destination, pdf);
+    return destination;
+  });
   ipcMain.handle('updates:get-state', () => ({ ...updateState, appVersion: app.getVersion(), supported: app.isPackaged, logs: [...updateState.logs] }));
   ipcMain.handle('updates:check', async () => {
     if (!app.isPackaged) {
@@ -133,7 +153,8 @@ app.whenReady().then(async () => {
     try {
       await autoUpdater.checkForUpdates();
     } catch (error) {
-      publishUpdateState(`Update check failed: ${error.message}`, 'error', { error: error.message });
+      const message = readableUpdaterError(error);
+      publishUpdateState(`Update check failed: ${message}`, 'error', { error: message });
     }
     return { ...updateState, logs: [...updateState.logs] };
   });
@@ -143,7 +164,8 @@ app.whenReady().then(async () => {
     try {
       await autoUpdater.downloadUpdate();
     } catch (error) {
-      publishUpdateState(`Update download failed: ${error.message}`, 'error', { error: error.message });
+      const message = readableUpdaterError(error);
+      publishUpdateState(`Update download failed: ${message}`, 'error', { error: message });
       throw error;
     }
     return true;
@@ -153,18 +175,34 @@ app.whenReady().then(async () => {
     publishUpdateState('Restarting to install the update.', 'installing');
     autoUpdater.quitAndInstall(false, true);
   });
-  ipcMain.handle('asset:choose-image', async () => {
+  const imageCategoryDirectory = category => {
+    const directory = {
+      doctors: 'doctors',
+      agents: 'marketing_agent',
+      referrers: 'Special_Referrer'
+    }[category];
+    if (!directory) throw new Error('Choose a supported profile category.');
+    return path.join(assetsDirectory, directory);
+  };
+  const saveProfileImage = async (sourcePath, category) => {
+    if (typeof sourcePath !== 'string' || !sourcePath) throw new Error('Choose an image file.');
+    const extension = path.extname(sourcePath).toLowerCase();
+    if (!['.png', '.jpg', '.jpeg', '.webp'].includes(extension)) throw new Error('Use a PNG, JPG or WebP image.');
+    const directory = imageCategoryDirectory(category);
+    await fs.mkdir(directory, { recursive: true });
+    const destination = path.join(directory, `${crypto.randomUUID()}${extension}`);
+    await fs.copyFile(sourcePath, destination);
+    return pathToFileURL(destination).href;
+  };
+  ipcMain.handle('asset:choose-image', async (_event, category) => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
     });
     if (result.canceled || !result.filePaths[0]) return null;
-    const extension = path.extname(result.filePaths[0]).toLowerCase();
-    const storedName = `${crypto.randomUUID()}${extension}`;
-    const destination = path.join(assetsDirectory, storedName);
-    await fs.copyFile(result.filePaths[0], destination);
-    return pathToFileURL(destination).href;
+    return saveProfileImage(result.filePaths[0], category);
   });
+  ipcMain.handle('asset:store-image', (_event, sourcePath, category) => saveProfileImage(sourcePath, category));
 
   configureAutoUpdater();
   createWindow();

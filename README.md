@@ -1,4 +1,4 @@
-# Kabirhat Private Hospital
+# Kabirhat Private Hospital & Normal Delivery Center
 
 Local-first Windows desktop application built with Electron, HTML, CSS and JavaScript.
 
@@ -51,7 +51,7 @@ The installer updates application files only. The JSON database and copied asset
 
 ## Local data
 
-The application creates `hospital-data.json` and an `assets/` folder under Electron's per-user application data directory. On Windows this is `%APPDATA%/hmss-desktop/`. Records are stored as JSON; selected doctor photos are copied into the local assets folder. No remote services are required.
+When running with `npm start`, records are stored in the three JSON files under `Database/`: `clinic-test-db.json` (users, tests, referrals and diagnostic bills), `doctor-appointment-db.json` (doctors and appointments), and `cabin-bookings-db.json` (cabins and indoor bookings). The browser-only preview fallback uses browser storage; the Electron app uses the JSON files. The installed application stores the same three files in `%APPDATA%/hmss-desktop/Database/` so updates do not overwrite or require writing to the installation directory. Existing `%APPDATA%/hmss-desktop/hospital-data.json` records are migrated to the three files on first launch after this change. Profile photos are copied locally into `assets/doctors/`, `assets/marketing_agent/` or `assets/Special_Referrer/` while running from source, and into the equivalent per-user assets folders in the installed application. No remote services are required.
 
 The starter catalog is written on first launch. The built-in sign-in is a basic local gate, not a security boundary: JSON data and credentials are not encrypted. Use this build with demo data only until proper account controls, encrypted storage and backups are implemented.
 
@@ -61,6 +61,7 @@ The starter catalog is written on first launch. The built-in sign-in is a basic 
 - Doctor directory, live and reserved visits, patient history and visit slips
 - Cabin availability, admission payments, renewals, release and booking history
 - Management of tests, doctors, cabins, marketing agents and special referrers
-- Searchable activity archive, date/status filters and basic operational analytics
+- Searchable activity archive with date/status filters, doctor referral metrics, activity trends, payment summaries, test rankings, cabin utilization and paginated analytics
+- Printable indoor bills with client and office copies on one A4 sheet; test cash memos use A5 paper, with black high-contrast text and the Unreal Studio icon credit
 
 Right-click menus are disabled. The application uses custom in-app dialogs and stores its operational data locally so the persistence layer can later be replaced or extended for Firebase Realtime Database.

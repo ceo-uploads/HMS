@@ -3,14 +3,16 @@
 
 	const modules = {
 		counter: { label: 'Counter', icon: '▤', tabs: ['Overview', 'New test', 'Checkout', 'Directory'] },
-		appointment: { label: 'Appointments', icon: '◷', tabs: ['Doctors', 'Live appointment', 'Pre-booked', 'Records'] },
 		booking: { label: 'Cabins', icon: '⌂', tabs: ['Cabins', 'Booking history'] },
+		appointment: { label: 'Appointment', icon: '◷', tabs: ['Doctors', 'Live appointment', 'Pre-booked', 'Records'] },
 		management: { label: 'Management', icon: '⚙', tabs: ['Tests', 'Doctors', 'Referrals', 'Cabins', 'Dev Tunnel'] },
-		archive: { label: 'Archive & reports', icon: '▥', tabs: ['Live summary', 'Tests', 'Doctors', 'Bookings', 'Analytics'] }
+		archive: { label: 'Archive & reports', icon: '▥', tabs: ['Live summary', 'Tests', 'Doctors', 'Bookings', 'Analytics', 'Leads'] }
 	};
 	const appRoot = document.getElementById('app');
 	const toastRoot = document.getElementById('toast-region');
-	const state = { data: null, user: null, route: { module: 'counter', tab: 0 }, query: '', filters: { date: 'all', status: 'all', sort: 'newest', from: '', to: '' }, updater: { appVersion: 'Loading…', supported: false, status: 'starting', percent: 0, logs: [] }, modal: null, saving: false };
+	const HOSPITAL_NAME = 'Kabirhat Private Hospital & Normal Delivery Center';
+	const HOSPITAL_LOGO = '../site_assets/Hospital_Logo.svg';
+	const state = { data: null, user: null, route: { module: 'counter', tab: 0 }, query: '', filters: { date: 'all', status: 'all', sort: 'newest', from: '', to: '' }, analytics: { period: 'month', page: 0, pageSize: 25, doctorPage: 0, doctorPageSize: 12, doctorSearch: '', testPage: 0, testPageSize: 10, testSearch: '', destroyVisualization: null }, updater: { appVersion: 'Loading…', supported: false, status: 'starting', percent: 0, logs: [] }, terminalLogs: [], searchIndex: null, searchResults: null, modal: null, saving: false };
 	const nowISO = () => new Date().toISOString();
 	const id = prefix => `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 	const money = amount => `৳ ${Number(amount || 0).toLocaleString('en-BD')}`;
@@ -26,13 +28,22 @@
 	async function persist(message) {
 		if (state.saving) return;
 		state.saving = true;
+		state.searchIndex = null;
+		state.searchResults = null;
 		try {
 			if (window.hospital?.save) await window.hospital.save(state.data);
 			else localStorage.setItem('hmss-data', JSON.stringify(state.data));
+			if (message) logTerminal('info', message);
 			if (message) toast(message);
 		} catch (error) {
+			logTerminal('error', error.message);
 			toast(`Could not save changes: ${error.message}`, true);
 		} finally { state.saving = false; }
+	}
+
+	function logTerminal(level, message) {
+		state.terminalLogs.push({ time: new Date().toLocaleTimeString('en-GB', { hour12: false }), level, message: String(message) });
+		state.terminalLogs = state.terminalLogs.slice(-100);
 	}
 
 	function toast(message, isError = false) {
@@ -54,19 +65,34 @@
 
 	function render() {
 		if (!state.data) return;
+		state.analytics.destroyVisualization?.();
+		state.analytics.destroyVisualization = null;
 		if (!state.user) return renderLogin();
 		const module = activeModule();
 		appRoot.innerHTML = `${windowBar()}${applicationHeader()}<div class="app-shell"><aside class="sidebar">${sidebar()}</aside><section class="workspace"><header class="topbar"><div class="breadcrumb"><span>Workspace</span><span class="crumb-divider">/</span><b>${module.label}</b></div><div class="topbar-right"><span class="clock" id="clock"></span><button class="button button-secondary button-small" data-action="logout">↪&nbsp; Sign out</button></div></header><main class="content" id="content">${renderPage()}</main><footer class="statusbar"><span class="status-ready"><i></i>Ready</span><span>Data store&nbsp; <b>Local JSON</b></span><span>Records&nbsp; <b>${allRecords().length}</b></span><span class="status-user">${escapeHtml(state.user.name)}</span></footer></section></div>${state.modal ? renderModal() : ''}`;
+		mountTerminalPanel();
+		mountSearchScanners();
+		mountReferralSource();
+		mountProfileEditor();
+		if (state.route.module === 'archive' && state.route.tab === 4) {
+			const chart = appRoot.querySelector('[data-analytics-3d]');
+			if (chart) state.analytics.destroyVisualization = window.HospitalAnalyticsVisuals.mountRevenueChart(chart, state.analytics.monthlyTrend || []);
+		}
+		if (window.JsBarcode) document.querySelectorAll('[data-barcode]').forEach(barcode => window.JsBarcode(barcode, barcode.dataset.barcode, { format: 'CODE128', displayValue: true, font: 'Courier New', fontSize: 12, width: 2.4, height: 42, margin: 6, textMargin: 2 }));
 		updateClock();
-		if (state.route.module === 'appointment' && [1, 2].includes(state.route.tab)) updateVisitPrice();
+		if (state.route.module === 'appointment' && [1, 2].includes(state.route.tab)) { updateVisitPrice(); fillDoctorSchedule(); }
+	}
+
+	function hospitalLogo(className, alt = '') {
+		return `<img class="${className}" src="${HOSPITAL_LOGO}" alt="${escapeHtml(alt)}">`;
 	}
 
 	function windowBar() {
-		return `<div class="windowbar"><div class="window-brand"><span class="brand-mark">H</span> Kabirhat Private Hospital</div><div class="window-actions"><button aria-label="Minimize" data-action="minimize">−</button><button aria-label="Maximize" data-action="maximize">□</button><button class="close" aria-label="Close" data-action="close">×</button></div></div>`;
+		return `<div class="windowbar"><div class="window-brand">${hospitalLogo('brand-mark')} ${escapeHtml(HOSPITAL_NAME)}</div><div class="window-actions"><button aria-label="Minimize" data-action="minimize">−</button><button aria-label="Maximize" data-action="maximize">□</button><button class="close" aria-label="Close" data-action="close">×</button></div></div>`;
 	}
 
 	function applicationHeader() {
-		return `<header class="application-header"><div class="application-nav"><div class="product-lockup"><span class="product-symbol">✚</span><span><strong>Kabirhat Private Hospital</strong><small>Clinical management system</small></span></div><nav class="module-nav">${Object.entries(modules).map(([key, item], index) => `<button class="module-link ${state.route.module === key ? 'active' : ''}" data-route="${key}"><span class="module-number">0${index + 1}</span>${item.label}</button>`).join('')}</nav><div class="department-label">Clinical Services</div></div><div class="accelerator-bar"><div class="accelerator-list"><span class="accelerator-caption">SHORTCUTS</span><span><kbd>F1</kbd> Help</span><button data-route="counter" data-route-tab="1"><kbd>F2</kbd> New test</button><button data-route="appointment" data-route-tab="1"><kbd>F3</kbd> Live visit</button><button data-route="booking" data-route-tab="0"><kbd>F5</kbd> Admit</button><span><kbd>F9</kbd> Print</span><span><kbd>F12</kbd> Lock</span></div><div class="system-health"><i></i>Local workstation <span>·</span> Ready</div></div></header>`;
+		return `<header class="application-header"><div class="application-nav"><div class="product-lockup">${hospitalLogo('product-symbol')}<span><strong>${escapeHtml(HOSPITAL_NAME)}</strong><small>Clinical management system</small></span></div><nav class="module-nav">${Object.entries(modules).map(([key, item], index) => `<button class="module-link ${state.route.module === key ? 'active' : ''}" data-route="${key}"><span class="module-number">0${index + 1}</span>${item.label}</button>`).join('')}</nav><div class="department-label">Clinical Services</div></div><div class="accelerator-bar"><div class="accelerator-list"><span class="accelerator-caption">SHORTCUTS</span><span><kbd>F1</kbd> Help</span><button data-route="counter" data-route-tab="1"><kbd>F2</kbd> New test</button><button data-route="appointment" data-route-tab="1"><kbd>F3</kbd> Live visit</button><button data-route="booking" data-route-tab="0"><kbd>F5</kbd> Admit</button><span><kbd>F9</kbd> Print</span><span><kbd>F12</kbd> Lock</span></div><div class="system-health"><i></i>Local workstation <span>·</span> Ready</div></div></header>`;
 	}
 
 	function sidebar() {
@@ -84,7 +110,7 @@
 	}
 
 	function renderLogin() {
-		appRoot.innerHTML = `${windowBar()}<main class="login-screen"><section class="login-panel"><div class="login-brand"><span class="brand-mark" style="width:30px;height:30px">H</span><div><strong>Kabirhat Private Hospital</strong><small>Management system · Local workstation</small></div></div><form class="login-form" id="login-form"><h1>Operator sign in</h1><p>Enter your account details to open this workstation.</p><div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" required></div><div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div><p class="error-text" id="login-error"></p><button class="button button-primary" type="submit">Sign in</button><div class="login-hint">Initial account: <b>admin</b> / <b>admin123</b></div></form></section></main>`;
+		appRoot.innerHTML = `${windowBar()}<main class="login-screen"><section class="login-art"><div class="login-brand">${hospitalLogo('login-logo')}<div><strong>${escapeHtml(HOSPITAL_NAME)}</strong><small>LOCAL CARE · CONNECTED TEAM</small></div></div><div class="login-hero-copy"><span class="login-kicker">HOSPITAL MANAGEMENT SYSTEM</span><h1>Care, coordinated with confidence.</h1><p>A calmer workspace for the people who keep every visit, report and room moving.</p><div class="login-pill-row"><span>●&nbsp; Private workspace</span><span>◈&nbsp; Local-first records</span></div></div><div class="login-art-footer"><span>Clinical operations, thoughtfully connected.</span><span class="login-art-orbit" aria-hidden="true"></span></div></section><section class="login-form-side"><form class="login-panel" id="login-form"><span class="login-form-kicker">SECURE WORKSTATION ACCESS</span><h2>Welcome back</h2><p>Sign in to continue to your hospital workspace.</p><div class="field"><label for="username">Username</label><div class="login-input-wrap"><span aria-hidden="true">◎</span><input id="username" name="username" autocomplete="username" placeholder="Enter your username" required></div></div><div class="field"><label for="password">Password</label><div class="login-input-wrap"><span aria-hidden="true">⌑</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required><button class="password-toggle" type="button" data-action="toggle-password" aria-label="Show password" aria-pressed="false">◉</button></div></div><p class="error-text" id="login-error" role="alert"></p><button class="button button-primary login-submit" type="submit"><span>Sign in securely</span><span aria-hidden="true">→</span></button><div class="login-assurance"><span>◆</span><span>Your session is protected on this workstation.</span></div></form></section></main>`;
 	}
 
 	function updateClock() {
@@ -126,6 +152,54 @@
 		return `<button class="button button-primary" data-action="${action}">＋&nbsp; ${label}</button>`;
 	}
 
+	function scanControl() {
+		return `<button class="button button-secondary button-small scan-button" data-action="focus-scanner" title="Focus barcode scanner">▦&nbsp; Scan</button><input class="scan-capture" data-scan-input aria-label="Barcode scanner input" autocomplete="off" tabindex="-1">`;
+	}
+
+	function mountSearchScanners() {
+		appRoot.querySelectorAll('#content .search-field').forEach(searchField => {
+			if (searchField.nextElementSibling?.matches('.scan-button, .scan-control')) return;
+			const control = document.createElement('span');
+			control.className = 'scan-control';
+			control.innerHTML = scanControl();
+			searchField.after(control);
+		});
+	}
+
+	function mountReferralSource() {
+		const form = appRoot.querySelector('#lab-form');
+		if (!form || form.querySelector('[name="agentId"]')) return;
+		const field = document.createElement('div');
+		field.className = 'field';
+		field.innerHTML = `<label for="field-agentId">Marketing agent</label><select id="field-agentId" name="agentId" class="control"><option value="">No referral</option>${state.data.agents.map(agent => `<option value="${escapeHtml(agent.id)}">${escapeHtml(agent.name)}</option>`).join('')}</select>`;
+		form.querySelector('.form-grid').insertBefore(field, form.querySelector('[name="referrerId"]').parentElement);
+	}
+
+	function profileImage(item) {
+		return `<img class="profile-thumb" src="${escapeHtml(item.photo || '../UI/profile-placeholder.svg')}" alt="${escapeHtml(item.name)}" onerror="this.src='../UI/profile-placeholder.svg'">`;
+	}
+
+	function mountProfileEditor() {
+		const form = appRoot.querySelector('#item-form');
+		if (!form || !['doctors', 'agents', 'referrers'].includes(form.dataset.kind)) return;
+		const record = state.data[form.dataset.kind].find(item => item.id === form.dataset.id) || {};
+		const category = form.dataset.kind;
+		const editor = document.createElement('div');
+		editor.className = 'field full profile-editor';
+		editor.innerHTML = `<label>Profile photo · Optional</label><div class="profile-dropzone" data-profile-drop><img class="profile-preview" src="${escapeHtml(record.photo || 'profile-placeholder.svg')}" alt="Profile preview"><div><strong>Drop an image here</strong><span>PNG, JPG or WebP · Saved in local assets/${category}</span><button class="button button-secondary button-small" type="button" data-action="choose-image">Choose image</button></div></div><input type="hidden" name="photo" value="${escapeHtml(record.photo || '')}">`;
+		form.querySelector('.form-grid').append(editor);
+	}
+
+	function mountTerminalPanel() {
+		if (state.route.module !== 'management' || state.route.tab !== 4) return;
+		const content = appRoot.querySelector('#content');
+		if (!content || content.querySelector('.terminal-panel')) return;
+		const panel = document.createElement('section');
+		panel.className = 'terminal-panel';
+		panel.innerHTML = `<header><strong>System &amp; terminal logs</strong><span>LOCAL SESSION</span></header><pre>${state.terminalLogs.map(entry => `<span class="terminal-${entry.level}">[${escapeHtml(entry.time)}] ${escapeHtml(entry.level.toUpperCase())} ${escapeHtml(entry.message)}</span>`).join('\n') || '[SYSTEM] Ready.'}</pre>`;
+		content.append(panel);
+	}
+
 	function renderCounter() {
 		const tab = state.route.tab;
 		if (tab === 0) {
@@ -144,14 +218,14 @@
 		const doctors = state.data.doctors.map(doctor => `<option value="${escapeHtml(doctor.id)}">${escapeHtml(doctor.id)} · ${escapeHtml(doctor.name)} · ${escapeHtml(doctor.specialty)}</option>`).join('');
 		const referrals = state.data.referrers.map(referrer => `<option value="${escapeHtml(referrer.id)}">${escapeHtml(referrer.id)} · ${escapeHtml(referrer.name)}</option>`).join('');
 		const tests = state.data.tests.map(test => `<option value="${escapeHtml(test.id)}">${escapeHtml(test.code)} · ${escapeHtml(test.name)} · ${money(test.price)}</option>`).join('');
-		return `${pageHeading('New test bill', 'Patient details and selected services are saved as one local record.')}<form id="lab-form"><section class="panel"><header class="panel-head"><div><h2>Patient information</h2><p>Enter the details as they should appear on the printed slip.</p></div></header><div class="panel-body"><div class="form-grid">${field('Patient name', 'patientName', '', 'text', true)}${field('Age', 'age', '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true)}${field('Contact number', 'contact', '', 'tel', true)}${selectField('Referring doctor', 'doctorIds', [], false, true, doctors)}${selectField('Special referrer', 'referrerId', [], false, false, `<option value="">No referrer</option>${referrals}`)}${selectField('Clinical tests', 'testIds', [], true, true, tests)}${field('Report delivery date and time', 'deliveryAt', defaultDateTime(), 'datetime-local', true)}${field('Remarks', 'remarks', '', 'text')}${field('Additional note', 'note', '', 'text')}</div></div></section><div class="two-column"><section class="panel"><header class="panel-head"><div><h2>Payment</h2><p>Discount and advance are optional.</p></div></header><div class="panel-body"><div class="form-grid">${field('Discount (৳)', 'discount', '0', 'number')}${field('Advance received (৳)', 'advance', '0', 'number')}${field('Extra description', 'description', '', 'text')}</div><label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11px"><input type="checkbox" name="fullPaid"> Mark full amount received</label></div></section><section class="panel"><header class="panel-head"><div><h2>Bill preview</h2><p>Totals update when you save.</p></div></header><div class="panel-body"><div class="notice">The bill ID is generated automatically and checked against existing records.</div><div class="summary-box"><div class="summary-row"><span>Selected tests</span><b id="bill-test-count">0</b></div><div class="summary-row"><span>Subtotal</span><b id="bill-subtotal">৳ 0</b></div><div class="summary-row total"><span>Net payable</span><b id="bill-total">৳ 0</b></div><div class="summary-row"><span>In words</span><b id="bill-words">Zero taka only</b></div></div></div></section></div><div class="form-actions"><button class="button button-secondary" type="button" data-route="counter" data-route-tab="0">Cancel</button><button class="button button-primary" type="submit">Save bill&nbsp; →</button></div></form>`;
+		return `${pageHeading('New test bill', 'Patient details and selected services are saved as one local record.')}<form id="lab-form"><section class="panel"><header class="panel-head"><div><h2>Patient information</h2><p>Enter the details as they should appear on the printed slip.</p></div></header><div class="panel-body"><div class="form-grid">${field('Patient name', 'patientName', '', 'text', true)}${field('Age', 'age', '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true)}${field('Contact number', 'contact', '', 'tel', true)}${selectField('Referring doctor · Optional', 'doctorIds', [], false, true, `<option value="">No referring doctor</option>${doctors}`)}${selectField('Special referrer', 'referrerId', [], false, false, `<option value="">No referrer</option>${referrals}`)}${selectField('Clinical tests', 'testIds', [], true, true, tests)}${field('Report delivery date and time', 'deliveryAt', defaultDateTime(), 'datetime-local', true)}${field('Remarks', 'remarks', '', 'text')}${field('Additional note', 'note', '', 'text')}</div></div></section><div class="two-column"><section class="panel"><header class="panel-head"><div><h2>Payment</h2><p>Discount and advance are optional.</p></div></header><div class="panel-body"><div class="form-grid">${field('Discount (৳)', 'discount', '0', 'number')}${field('Advance received (৳)', 'advance', '0', 'number')}${field('Extra description', 'description', '', 'text')}</div><label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11px"><input type="checkbox" name="fullPaid"> Mark full amount received</label></div></section><section class="panel"><header class="panel-head"><div><h2>Bill preview</h2><p>Totals update when you save.</p></div></header><div class="panel-body"><div class="notice">The bill ID is generated automatically and checked against existing records.</div><div class="summary-box"><div class="summary-row"><span>Selected tests</span><b id="bill-test-count">0</b></div><div class="summary-row"><span>Subtotal</span><b id="bill-subtotal">৳ 0</b></div><div class="summary-row total"><span>Net payable</span><b id="bill-total">৳ 0</b></div><div class="summary-row"><span>In words</span><b id="bill-words">Zero taka only</b></div></div></div></section></div><div class="form-actions"><button class="button button-secondary" type="button" data-route="counter" data-route-tab="0">Cancel</button><button class="button button-primary" type="submit">Save bill&nbsp; →</button></div></form>`;
 	}
 
 	function renderLabList(onlyPending) {
 		const title = onlyPending ? 'Report checkout' : 'Test directory';
 		const orders = state.data.labOrders.filter(order => !onlyPending || order.status !== 'Delivered').filter(searchRecord).sort(byDateDesc);
 		const rows = orders.map(order => `<tr><td><strong>${escapeHtml(order.billId)}</strong></td><td>${escapeHtml(order.patientName)}</td><td>${dateTime(order.createdAt)}</td><td>${dateTime(order.deliveryAt)}</td><td>${money(order.net)}</td><td>${money(order.due)}</td><td><span class="badge ${order.status === 'Delivered' ? 'good' : 'warn'}">${escapeHtml(order.status)}</span></td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="view-record" data-kind="labOrders" data-id="${escapeHtml(order.id)}">View</button>${onlyPending ? `<button class="button button-primary button-small" data-action="deliver-lab" data-id="${escapeHtml(order.id)}">Hand over</button>` : ''}<button class="icon-button" title="Print slip" data-action="print-record" data-kind="labOrders" data-id="${escapeHtml(order.id)}">⎙</button></div></td></tr>`);
-		const extra = `<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search bill, patient, test or contact" value="${escapeHtml(state.query)}"></div><select class="control" data-sort><option value="newest" ${state.filters.sort === 'newest' ? 'selected' : ''}>Newest first</option><option value="oldest" ${state.filters.sort === 'oldest' ? 'selected' : ''}>Oldest first</option></select><span class="badge">${orders.length} records</span></div>`;
+		const extra = `<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search bill, patient, test or contact" value="${escapeHtml(state.query)}"></div>${scanControl()}<select class="control" data-sort><option value="oldest" ${state.filters.sort === 'oldest' ? 'selected' : ''}>Oldest first</option><option value="newest" ${state.filters.sort === 'newest' ? 'selected' : ''}>Newest first</option></select><span class="badge">${orders.length} records</span></div>`;
 		return `${pageHeading(title, onlyPending ? 'Find reports due for patient handover and close outstanding balances.' : 'Search and review every registered diagnostic test slip.', onlyPending ? '' : emptyButton('new-lab', 'New test bill'))}${panel(title, extra + table(['Bill ID', 'Patient', 'Test date', 'Report due', 'Net', 'Due', 'Status', 'Actions'], rows))}`;
 	}
 
@@ -168,12 +242,45 @@
 	}
 
 	function renderDoctorCards() {
-		return `${pageHeading('Find a specialist', 'Choose a doctor to start a live visit or reserve a future appointment.')}<div class="doctor-grid">${state.data.doctors.map(doctor => `<article class="doctor-card"><div class="doctor-top"><img class="doctor-photo" src="${escapeHtml(doctor.photo || '')}" alt="" onerror="this.style.display='none'"><div><h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.id)} · ${escapeHtml(doctor.title || doctor.specialty)}</p></div></div><div class="doctor-meta"><span>Specialty&nbsp; · &nbsp;${escapeHtml(doctor.specialty || 'General practice')}</span><span>Visiting&nbsp; · &nbsp;${escapeHtml(doctor.visits || 'Schedule on request')}</span><span>Contact&nbsp; · &nbsp;${escapeHtml(doctor.contact || 'Not listed')}</span></div><div class="doctor-bottom"><span class="price-pair">New&nbsp; <b>${money(doctor.newPrice)}</b><br>Returning&nbsp; <b>${money(doctor.oldPrice)}</b></span><div class="inline-actions"><button class="button button-secondary button-small" data-action="book-doctor" data-doctor="${escapeHtml(doctor.id)}" data-pre="true">Reserve</button><button class="button button-primary button-small" data-action="book-doctor" data-doctor="${escapeHtml(doctor.id)}">Start visit</button></div></div></article>`).join('') || `<div class="empty">Add doctors in Management to begin scheduling.</div>`}</div>`;
+		const doctors = sortedDoctorsBySchedule();
+		return `${pageHeading('Find a specialist', 'Choose a doctor to start a live visit or reserve a future appointment.')}<div class="doctor-grid">${doctors.map(doctor => {
+			const status = doctorScheduleStatus(doctor);
+			const photo = `<img class="doctor-photo" src="${escapeHtml(doctor.photo || 'profile-placeholder.svg')}" alt="${escapeHtml(doctor.name)}" onerror="this.src='profile-placeholder.svg'">`;
+			return `<article class="doctor-card"><div class="doctor-top">${photo}<div><h3>${escapeHtml(doctor.name)}</h3><p>${escapeHtml(doctor.id)} · ${escapeHtml(doctor.title || doctor.specialty)}</p></div></div><div class="doctor-meta"><span class="doctor-specialty">${escapeHtml(doctor.specialty || 'General practice')}</span><span class="doctor-chamber ${status.state}">${escapeHtml(status.label)}</span><span>Contact · ${escapeHtml(doctor.contact || 'Not listed')}</span></div><div class="doctor-bottom"><span class="price-pair">New&nbsp; <b>${money(doctor.newPrice)}</b><br>Returning&nbsp; <b>${money(doctor.oldPrice)}</b></span><div class="inline-actions"><button class="button button-secondary button-small" data-action="book-doctor" data-doctor="${escapeHtml(doctor.id)}" data-pre="true">Reserve</button><button class="button button-primary button-small" data-action="book-doctor" data-doctor="${escapeHtml(doctor.id)}" ${status.state === 'closed' ? 'disabled' : ''}>Start visit</button></div></div></article>`;
+		}).join('') || `<div class="empty">Add doctors in Management to begin scheduling.</div>`}</div>`;
+	}
+
+	function chamberRange(doctor) {
+		const matches = [...String(doctor.visits || '').matchAll(/(\d{1,2}):(\d{2})/g)];
+		if (matches.length < 2) return null;
+		return matches.slice(0, 2).map(match => Number(match[1]) * 60 + Number(match[2]));
+	}
+
+	function doctorScheduleStatus(doctor, now = new Date()) {
+		const range = chamberRange(doctor);
+		if (!range) return { state: 'closed', label: doctor.visits || 'Schedule on request', start: Infinity };
+		const current = now.getHours() * 60 + now.getMinutes();
+		const [start, end] = range;
+		if (current >= start && current <= end) return { state: 'live', label: `In chamber · ${doctor.visits}`, start };
+		const remaining = (start - current + 1440) % 1440;
+		if (remaining <= 60) return { state: 'upcoming', label: `Starts in ${remaining} min · ${doctor.visits}`, start };
+		return { state: 'closed', label: doctor.visits || 'Schedule on request', start };
+	}
+
+	function sortedDoctorsBySchedule() {
+		const rank = { live: 0, upcoming: 1, closed: 2 };
+		return state.data.doctors.slice().sort((left, right) => {
+			const leftStatus = doctorScheduleStatus(left);
+			const rightStatus = doctorScheduleStatus(right);
+			const timeOrder = leftStatus.state === 'closed' && rightStatus.state === 'closed' ? rightStatus.start - leftStatus.start : leftStatus.start - rightStatus.start;
+			return rank[leftStatus.state] - rank[rightStatus.state] || timeOrder || String(left.name).localeCompare(String(right.name));
+		});
 	}
 
 	function renderAppointmentForm(isPrebooked) {
 		const preferredDoctor = sessionStorage.getItem('hmss-doctor') || '';
-		const doctors = state.data.doctors.map(doctor => `<option value="${escapeHtml(doctor.id)}" ${preferredDoctor === doctor.id ? 'selected' : ''}>${escapeHtml(doctor.id)} · ${escapeHtml(doctor.name)} · ${escapeHtml(doctor.specialty)}</option>`).join('');
+		const availableDoctors = isPrebooked ? state.data.doctors : state.data.doctors.filter(doctor => ['live', 'upcoming'].includes(doctorScheduleStatus(doctor).state));
+		const doctors = availableDoctors.map(doctor => `<option value="${escapeHtml(doctor.id)}" ${preferredDoctor === doctor.id ? 'selected' : ''}>${escapeHtml(doctor.id)} · ${escapeHtml(doctor.name)} · ${escapeHtml(doctor.specialty)}</option>`).join('');
 		if (preferredDoctor) sessionStorage.removeItem('hmss-doctor');
 		return `${pageHeading(isPrebooked ? 'Reserve an appointment' : 'Live appointment', 'Patient history is matched by contact number and used to set the visit fee.')}<form id="appointment-form" data-prebooked="${isPrebooked}"><section class="panel"><header class="panel-head"><div><h2>Patient and visit details</h2><p>${isPrebooked ? 'A reserved visit starts as pending.' : 'A walk-in visit is recorded as done after saving.'}</p></div></header><div class="panel-body"><div class="form-grid">${selectField('Doctor', 'doctorId', [], true, false, `<option value="">Choose a doctor</option>${doctors}`)}${field('Appointment date and time', 'visitAt', defaultTodayDateTime(), 'datetime-local', true)}${field('Patient name', 'patientName', '', 'text', true)}${field('Contact number', 'contact', '', 'tel', true)}${field('Age', 'age', '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true)}${field('From', 'fromTime', '', 'time')}${field('To', 'toTime', '', 'time')}${field('Visit fee (৳)', 'price', '', 'number', true)}<div class="field full"><div class="notice" id="patient-history">Enter the patient's contact number to check previous visits.</div></div></div></div></section><div class="form-actions"><button class="button button-secondary" type="button" data-route="appointment" data-route-tab="0">Cancel</button><button class="button button-primary" type="submit">${isPrebooked ? 'Save reservation' : 'Complete visit'}&nbsp; →</button></div></form>`;
 	}
@@ -181,17 +288,17 @@
 	function renderAppointmentList() {
 		const records = state.data.appointments.filter(searchRecord).sort(byDateDesc);
 		const rows = records.map(record => `<tr><td><strong>${escapeHtml(record.recordId)}</strong></td><td>${escapeHtml(record.patientName)}<br><small>${escapeHtml(record.contact)}</small></td><td>${escapeHtml(doctorName(record.doctorId))}</td><td>${dateTime(record.visitAt)}</td><td>${money(record.price)}</td><td><span class="badge ${record.status === 'Done' ? 'good' : 'warn'}">${escapeHtml(record.status)}</span></td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="view-record" data-kind="appointments" data-id="${escapeHtml(record.id)}">View</button>${record.status === 'Pending' ? `<button class="button button-primary button-small" data-action="complete-appointment" data-id="${escapeHtml(record.id)}">Complete</button>` : `<button class="icon-button" title="Print visit slip" data-action="print-record" data-kind="appointments" data-id="${escapeHtml(record.id)}">⎙</button>`}</div></td></tr>`);
-		return `${pageHeading('Appointment records', 'Review scheduled and completed doctor visits.', `<button class="button button-secondary" data-tab="0">Browse doctors</button>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search patient, doctor or record" value="${escapeHtml(state.query)}"></div><select class="control" data-status-filter><option value="all">All statuses</option><option>Pending</option><option>Done</option></select></div>${panel('Visit directory', table(['Record', 'Patient', 'Doctor', 'Visit time', 'Fee', 'Status', 'Actions'], rows))}`;
+		return `${pageHeading('Appointment records', 'Review scheduled and completed doctor visits.', `<button class="button button-secondary" data-tab="0">Browse doctors</button>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search patient, doctor or record" value="${escapeHtml(state.query)}"></div>${scanControl()}<select class="control" data-status-filter><option value="all">All statuses</option><option>Pending</option><option>Done</option></select></div>${panel('Visit directory', table(['Record', 'Patient', 'Doctor', 'Visit time', 'Fee', 'Status', 'Actions'], rows))}`;
 	}
 
 	function renderBookings() {
 		if (state.route.tab === 0) {
 			const active = state.data.bookings.filter(booking => booking.status === 'Occupied' && new Date(booking.endAt) > new Date());
-			return `${pageHeading('Cabin availability', 'Choose an available cabin to admit a patient. Occupied cabins show their release time.', `<button class="button button-secondary" data-tab="1">Booking history&nbsp; →</button>`)}${metrics([{ label: 'Total cabins', value: state.data.cabins.length }, { label: 'Available now', value: Math.max(0, state.data.cabins.length - active.length), accent: true }, { label: 'Occupied', value: active.length }, { label: 'Current admissions', value: active.length }])}<div class="cabin-grid">${state.data.cabins.map(cabin => { const booking = active.find(item => item.cabinId === cabin.id); return `<article class="cabin-card ${booking ? 'occupied' : 'available'}"><div class="cabin-top"><span class="cabin-number">${escapeHtml(cabin.id.split('-').at(-1))}</span><span class="cabin-status">${booking ? '● Occupied' : '● Available'}</span></div><h3>${escapeHtml(cabin.name)}</h3><p>${booking ? `${escapeHtml(booking.patientName)} · Available ${dateTime(booking.endAt)}` : `${money(cabin.price)} / day`}</p>${booking ? `<div class="inline-actions"><button class="button button-secondary button-small" data-action="view-record" data-kind="bookings" data-id="${escapeHtml(booking.id)}">Details</button><button class="button button-secondary button-small" data-action="renew-booking" data-id="${escapeHtml(booking.id)}">Renew</button></div>` : `<button class="button button-primary button-small" data-action="book-cabin" data-cabin="${escapeHtml(cabin.id)}">Admit patient</button>`}</article>`; }).join('') || `<div class="empty">Add cabins in Management to begin bookings.</div>`}</div>`;
+			return `${pageHeading('Cabin availability', 'Choose an available cabin to admit a patient. Occupied cabins show their release time.', `<button class="button button-secondary" data-tab="1">Booking history&nbsp; →</button>`)}${metrics([{ label: 'Total cabins', value: state.data.cabins.length }, { label: 'Available now', value: Math.max(0, state.data.cabins.length - active.length), accent: true }, { label: 'Occupied', value: active.length }, { label: 'Current admissions', value: active.length }])}<div class="cabin-grid">${state.data.cabins.map(cabin => { const booking = active.find(item => item.cabinId === cabin.id); return `<article class="cabin-card ${booking ? 'occupied' : 'available'}"><div class="cabin-top"><span class="cabin-number">${escapeHtml(cabin.id.split('-').at(-1))}</span><span class="cabin-status">${booking ? '● Occupied' : '● Available'}</span></div><h3>${escapeHtml(cabin.name)}</h3><p>${booking ? `${escapeHtml(booking.patientName)} · Available ${dateTime(booking.endAt)}` : `${money(cabin.price)} / day`}</p>${booking ? `<div class="inline-actions"><button class="button button-secondary button-small" data-action="view-record" data-kind="bookings" data-id="${escapeHtml(booking.id)}">Details</button><button class="button button-secondary button-small" data-action="add-cabin-service" data-id="${escapeHtml(booking.id)}">Add service</button><button class="button button-secondary button-small" data-action="renew-booking" data-id="${escapeHtml(booking.id)}">Renew</button></div>` : `<button class="button button-primary button-small" data-action="book-cabin" data-cabin="${escapeHtml(cabin.id)}">Admit patient</button>`}</article>`; }).join('') || `<div class="empty">Add cabins in Management to begin bookings.</div>`}</div>`;
 		}
 		const records = state.data.bookings.filter(searchRecord).sort(byDateDesc);
 		const rows = records.map(record => `<tr><td><strong>${escapeHtml(record.bookingId)}</strong></td><td>${escapeHtml(record.patientName)}</td><td>${escapeHtml(cabinName(record.cabinId))}</td><td>${dateTime(record.startAt)}</td><td>${dateTime(record.endAt)}</td><td>${money(record.net)}</td><td>${money(record.due)}</td><td><span class="badge ${record.status === 'Occupied' ? 'warn' : 'good'}">${escapeHtml(record.status)}</span></td><td><button class="button button-secondary button-small" data-action="view-record" data-kind="bookings" data-id="${escapeHtml(record.id)}">View</button>${record.status === 'Occupied' ? `<button class="button button-danger button-small" data-action="release-booking" data-id="${escapeHtml(record.id)}">Release</button>` : ''}</td></tr>`);
-		return `${pageHeading('Cabin booking history', 'Search all admissions and review their payments and duration.')}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search booking, patient or cabin" value="${escapeHtml(state.query)}"></div></div>${panel('Bookings', table(['Booking ID', 'Patient', 'Cabin', 'Admitted', 'Release', 'Net', 'Due', 'Status', ''], rows))}`;
+		return `${pageHeading('Cabin booking history', 'Search all admissions and review their payments and duration.')}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search booking, patient or cabin" value="${escapeHtml(state.query)}"></div>${scanControl()}</div>${panel('Bookings', table(['Booking ID', 'Patient', 'Cabin', 'Admitted', 'Release', 'Net', 'Due', 'Status', ''], rows))}`;
 	}
 
 	function renderManagement() {
@@ -208,7 +315,9 @@
 		if (type === 'tests') rows = records.map(item => `<tr><td><strong>${escapeHtml(item.code)}</strong></td><td>${escapeHtml(item.name)}</td><td>${money(item.price)}</td>${manageActions(type, item)}</tr>`);
 		if (type === 'doctors') rows = records.map(item => `<tr><td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.id)} · ${escapeHtml(item.title || '')}</small></td><td>${escapeHtml(item.specialty)}</td><td>${escapeHtml(item.visits)}</td><td>${money(item.newPrice)}</td><td>${money(item.oldPrice)}</td>${manageActions(type, item)}</tr>`);
 		if (type === 'cabins') rows = records.map(item => `<tr><td><strong>${escapeHtml(item.id)}</strong></td><td>${escapeHtml(item.name)}</td><td>${money(item.price)} / day</td>${manageActions(type, item)}</tr>`);
-		return `${pageHeading(config.title, config.subtitle, `<button class="button button-primary" data-action="add-item" data-kind="${type}">＋&nbsp; Add ${type === 'tests' ? 'test' : type === 'doctors' ? 'doctor' : 'cabin'}</button>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search ${type}" value="${escapeHtml(state.query)}"></div></div>${panel(config.title, table(config.headers, rows))}`;
+		const serviceRows = type === 'cabins' ? state.data.indoorServices.filter(searchRecord).map(item => `<tr><td><strong>${escapeHtml(item.name)}</strong>${item.children?.length ? `<br><small>${item.children.map(child => `${escapeHtml(child.name)} · ${money(child.price)}`).join(' · ')}</small>` : ''}</td><td>${Number(item.price) ? money(item.price) : item.children?.length ? 'Parent group' : money(item.price)}</td>${manageActions('indoorServices', item)}</tr>`) : [];
+		const servicePanel = type === 'cabins' ? panel('Indoor service items', `<div class="toolbar"><span class="field-hint">Additional priced services available on cabin bills.</span><button class="button button-secondary button-small" data-action="add-item" data-kind="indoorServices">＋ Add service item</button></div>${table(['Service item', 'Price', 'Actions'], serviceRows)}`) : '';
+		return `${pageHeading(config.title, config.subtitle, `<button class="button button-primary" data-action="add-item" data-kind="${type}">＋&nbsp; Add ${type === 'tests' ? 'test' : type === 'doctors' ? 'doctor' : 'cabin'}</button>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search ${type}" value="${escapeHtml(state.query)}"></div></div>${panel(config.title, table(config.headers, rows))}${servicePanel}`;
 	}
 
 	function renderDevTunnel() {
@@ -239,44 +348,229 @@
 	}
 
 	function renderReferralManagement() {
-		const agents = state.data.agents.filter(searchRecord).map(agent => `<tr><td><strong>${escapeHtml(agent.name)}</strong></td><td>${escapeHtml(agent.id)}</td><td>${escapeHtml(agent.contact)}</td><td>${state.data.referrers.filter(referrer => referrer.agentId === agent.id).length}</td>${manageActions('agents', agent)}</tr>`);
-		const referrers = state.data.referrers.filter(searchRecord).map(referrer => `<tr><td><strong>${escapeHtml(referrer.name)}</strong></td><td>${escapeHtml(referrer.id)}</td><td>${escapeHtml(referrer.contact)}</td><td>${escapeHtml(state.data.agents.find(agent => agent.id === referrer.agentId)?.name || 'Unassigned')}</td>${manageActions('referrers', referrer)}</tr>`);
-		return `${pageHeading('Referral network', 'Keep marketing partners and their special referrers organized.', `<div class="inline-actions"><button class="button button-secondary" data-action="add-item" data-kind="agents">＋&nbsp; Add agent</button><button class="button button-primary" data-action="add-item" data-kind="referrers">＋&nbsp; Add referrer</button></div>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search agent, referrer or contact" value="${escapeHtml(state.query)}"></div></div>${panel('Marketing agents', table(['Agent', 'Code', 'Contact', 'Referrers', 'Actions'], agents))}${panel('Special referrers', table(['Referrer', 'Code', 'Contact', 'Agent', 'Actions'], referrers))}`;
+		const agents = state.data.agents.filter(searchRecord).map(agent => `<tr><td><div class="profile-cell">${profileImage(agent)}<strong>${escapeHtml(agent.name)}</strong></div></td><td>${escapeHtml(agent.id)}</td><td>${escapeHtml(agent.contact)}</td><td>${state.data.referrers.filter(referrer => referrer.agentId === agent.id).length}</td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="see-referrers" data-id="${escapeHtml(agent.id)}">See referrers</button><button class="button button-secondary button-small" data-action="agent-dashboard" data-id="${escapeHtml(agent.id)}">Dashboard</button></div></td>${manageActions('agents', agent)}</tr>`);
+		const referrers = state.data.referrers.filter(searchRecord).map(referrer => `<tr><td><div class="profile-cell">${profileImage(referrer)}<strong>${escapeHtml(referrer.name)}</strong></div></td><td>${escapeHtml(referrer.id)}</td><td>${escapeHtml(referrer.contact)}</td><td>${escapeHtml(state.data.agents.find(agent => agent.id === referrer.agentId)?.name || 'Unassigned')}</td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="view-referrer" data-id="${escapeHtml(referrer.id)}">Biodata</button><button class="button button-secondary button-small" data-action="referrer-dashboard" data-id="${escapeHtml(referrer.id)}">Dashboard</button></div></td>${manageActions('referrers', referrer)}</tr>`);
+		return `${pageHeading('Referral network', 'Keep marketing partners and their special referrers organized.', `<div class="inline-actions"><button class="button button-secondary" data-action="add-item" data-kind="agents">＋&nbsp; Add agent</button><button class="button button-primary" data-action="add-item" data-kind="referrers">＋&nbsp; Add referrer</button></div>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search agent, referrer or contact" value="${escapeHtml(state.query)}"></div>${scanControl()}</div>${panel('Marketing agents', table(['Agent', 'Code', 'Contact', 'Referrers', '', 'Actions'], agents))}${panel('Special referrers', table(['Referrer', 'Code', 'Contact', 'Agent', '', 'Actions'], referrers))}`;
 	}
 
 	function renderArchive() {
 		const all = allRecords().filter(searchRecord).sort(byDateDesc);
 		const tab = state.route.tab;
 		if (tab === 4) return renderAnalytics();
+		if (tab === 5) return renderLeads();
 		const kind = tab === 1 ? 'labOrders' : tab === 2 ? 'appointments' : tab === 3 ? 'bookings' : '';
 		const selected = kind ? state.data[kind].filter(searchRecord).sort(byDateDesc) : all;
 		const collected = selected.reduce((sum, item) => sum + Number(item.advance || 0), 0);
 		const due = selected.reduce((sum, item) => sum + Number(item.due || 0), 0);
 		const records = selected.map(record => `<tr><td><strong>${escapeHtml(record.billId || record.recordId || record.bookingId)}</strong></td><td>${escapeHtml(record.patientName)}</td><td>${escapeHtml(record.kindLabel || (record.testNames ? 'Diagnostic test' : record.doctorId ? 'Doctor visit' : 'Cabin booking'))}</td><td>${dateTime(record.createdAt || record.visitAt || record.startAt)}</td><td>${money(record.net || record.price)}</td><td>${money(record.advance || 0)}</td><td>${money(record.due || 0)}</td><td><span class="badge ${record.status === 'Done' || record.status === 'Delivered' || record.status === 'Completed' ? 'good' : 'warn'}">${escapeHtml(record.status)}</span></td><td><button class="button button-secondary button-small" data-action="view-record" data-kind="${kind || recordKind(record)}" data-id="${escapeHtml(record.id)}">View</button></td></tr>`);
-		return `${pageHeading(tab === 0 ? 'Live summary' : activeModule().tabs[tab], 'Review hospital activity, payment status and patient records.', `<button class="button button-secondary" data-action="print-summary">⎙&nbsp; Print summary</button>`)}${metrics([{ label: 'Records', value: selected.length, note: 'In this view' }, { label: 'Received', value: money(collected), accent: true }, { label: 'Remaining due', value: money(due), note: 'Across listed records' }, { label: 'Patient visits', value: new Set(selected.map(item => item.contact)).size }])}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search patient, record or service" value="${escapeHtml(state.query)}"></div><select class="control" data-date-filter><option value="all" ${state.filters.date === 'all' ? 'selected' : ''}>Any date</option><option value="today" ${state.filters.date === 'today' ? 'selected' : ''}>Today</option><option value="7" ${state.filters.date === '7' ? 'selected' : ''}>Last 7 days</option><option value="30" ${state.filters.date === '30' ? 'selected' : ''}>Last 30 days</option><option value="custom" ${state.filters.date === 'custom' ? 'selected' : ''}>Custom range</option></select>${state.filters.date === 'custom' ? `<input class="control" aria-label="From date" type="date" data-range="from" value="${escapeHtml(state.filters.from)}"><input class="control" aria-label="To date" type="date" data-range="to" value="${escapeHtml(state.filters.to)}">` : ''}<select class="control" data-status-filter><option value="all" ${state.filters.status === 'all' ? 'selected' : ''}>All statuses</option><option ${state.filters.status === 'Pending' ? 'selected' : ''}>Pending</option><option ${state.filters.status === 'Done' ? 'selected' : ''}>Done</option><option ${state.filters.status === 'Delivered' ? 'selected' : ''}>Delivered</option><option ${state.filters.status === 'Occupied' ? 'selected' : ''}>Occupied</option></select></div>${panel('Activity records', table(['Reference', 'Patient', 'Service', 'Date', 'Net', 'Received', 'Due', 'Status', ''], records))}`;
+		const archiveActions = `<div class="inline-actions"><button class="button button-secondary" data-route="archive" data-route-tab="4">View analytics</button><button class="button button-secondary" data-action="print-summary">⎙&nbsp; Print summary</button></div>`;
+		return `${pageHeading(tab === 0 ? 'Live summary' : activeModule().tabs[tab], 'Review hospital activity, payment status and patient records.', archiveActions)}${metrics([{ label: 'Records', value: selected.length, note: 'In this view' }, { label: 'Received', value: money(collected), accent: true }, { label: 'Remaining due', value: money(due), note: 'Across listed records' }, { label: 'Patient visits', value: new Set(selected.map(item => item.contact)).size }])}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search patient, record or service" value="${escapeHtml(state.query)}"></div><select class="control" data-date-filter><option value="all" ${state.filters.date === 'all' ? 'selected' : ''}>Any date</option><option value="today" ${state.filters.date === 'today' ? 'selected' : ''}>Today</option><option value="7" ${state.filters.date === '7' ? 'selected' : ''}>Last 7 days</option><option value="30" ${state.filters.date === '30' ? 'selected' : ''}>Last 30 days</option><option value="custom" ${state.filters.date === 'custom' ? 'selected' : ''}>Custom range</option></select>${state.filters.date === 'custom' ? `<input class="control" aria-label="From date" type="date" data-range="from" value="${escapeHtml(state.filters.from)}"><input class="control" aria-label="To date" type="date" data-range="to" value="${escapeHtml(state.filters.to)}">` : ''}<select class="control" data-status-filter><option value="all" ${state.filters.status === 'all' ? 'selected' : ''}>All statuses</option><option ${state.filters.status === 'Pending' ? 'selected' : ''}>Pending</option><option ${state.filters.status === 'Done' ? 'selected' : ''}>Done</option><option ${state.filters.status === 'Delivered' ? 'selected' : ''}>Delivered</option><option ${state.filters.status === 'Occupied' ? 'selected' : ''}>Occupied</option></select></div>${panel('Activity records', table(['Reference', 'Patient', 'Service', 'Date', 'Net', 'Received', 'Due', 'Status', ''], records))}`;
 	}
 
 	function renderAnalytics() {
-		const records = allRecords();
-		const today = new Date().toDateString();
-		const current = records.filter(item => new Date(item.createdAt || item.visitAt || item.startAt).toDateString() === today);
-		const max = Math.max(1, ...Array.from({ length: 7 }, (_, index) => {
-			const day = new Date(); day.setDate(day.getDate() - (6 - index));
-			return records.filter(item => new Date(item.createdAt || item.visitAt || item.startAt).toDateString() === day.toDateString()).length;
+		const period = state.analytics.period;
+		const filtered = allRecords().filter(record => isInAnalyticsPeriod(record, period) && matchesAnalyticsSearch(record));
+		const sortedRecords = filtered.sort((left, right) => new Date(right.createdAt || right.visitAt || right.startAt) - new Date(left.createdAt || left.visitAt || left.startAt));
+		const totals = sortedRecords.reduce((result, record) => {
+			const net = Number(record.net ?? record.price ?? record.subtotal ?? 0);
+			const received = Number(record.advance || 0);
+			result.net += net;
+			result.received += received;
+			result.due += Number(record.due ?? Math.max(0, net - received));
+			result.patients.add(patientKey(record));
+			result.tests += Array.isArray(record.tests) ? record.tests.length : 0;
+			return result;
+		}, { net: 0, received: 0, due: 0, tests: 0, patients: new Set() });
+		const advanced = window.HospitalAnalytics.summarizeRecords(sortedRecords.map(record => ({
+			...record,
+			kind: recordKind(record),
+			patientKey: patientKey(record)
+		})));
+		const monthlyTrend = Array.from({ length: 12 }, (_, index) => {
+			const month = new Date();
+			month.setDate(1);
+			month.setHours(0, 0, 0, 0);
+			month.setMonth(month.getMonth() - (11 - index));
+			return { month, billed: 0, received: 0, records: 0 };
+		});
+		const monthlyByKey = new Map(monthlyTrend.map(item => [`${item.month.getFullYear()}-${item.month.getMonth()}`, item]));
+		for (const record of allRecords()) {
+			const timestamp = new Date(record.createdAt || record.visitAt || record.startAt);
+			if (!Number.isFinite(timestamp.getTime())) continue;
+			const month = monthlyByKey.get(`${timestamp.getFullYear()}-${timestamp.getMonth()}`);
+			if (!month) continue;
+			month.billed += Number(record.net ?? record.price ?? 0);
+			month.received += Number(record.advance || 0);
+			month.records += 1;
+		}
+		state.analytics.monthlyTrend = monthlyTrend.map(item => ({
+			label: item.month.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+			billed: Math.max(0, item.billed),
+			received: Math.max(0, item.received),
+			records: item.records
 		}));
-		const days = Array.from({ length: 7 }, (_, index) => {
-			const day = new Date(); day.setDate(day.getDate() - (6 - index));
-			const count = records.filter(item => new Date(item.createdAt || item.visitAt || item.startAt).toDateString() === day.toDateString()).length;
-			return `<div class="chart-bar-wrap"><span>${count}</span><i class="chart-bar" style="height:${Math.max(3, count / max * 110)}px"></i><span>${day.toLocaleDateString('en-GB', { weekday: 'short' })}</span></div>`;
+		const daily = Array.from({ length: 14 }, (_, index) => {
+			const day = new Date();
+			day.setHours(0, 0, 0, 0);
+			day.setDate(day.getDate() - (13 - index));
+			return { day, count: 0, received: 0 };
+		});
+		const dailyByKey = new Map(daily.map(item => [item.day.toDateString(), item]));
+		for (const record of allRecords()) {
+			const timestamp = new Date(record.createdAt || record.visitAt || record.startAt);
+			if (!Number.isFinite(timestamp.getTime())) continue;
+			const day = dailyByKey.get(timestamp.toDateString());
+			if (day) {
+				day.count += 1;
+				day.received += Number(record.advance || 0);
+			}
+		}
+		const trendMax = Math.max(1, ...daily.map(item => item.count));
+		const points = daily.map((item, index) => `${index * (700 / (daily.length - 1))},${135 - item.count / trendMax * 112}`).join(' ');
+		const chart = `<svg class="analytics-trend" viewBox="0 0 700 160" role="img" aria-label="Patient record activity over the last 14 days"><path class="analytics-trend-grid" d="M0 23H700 M0 79H700 M0 135H700"/><polyline class="analytics-trend-line" points="${points}"/>${daily.map((item, index) => `<circle cx="${index * (700 / (daily.length - 1))}" cy="${135 - item.count / trendMax * 112}" r="3"><title>${item.day.toLocaleDateString('en-GB')} · ${item.count} records · ${money(item.received)}</title></circle>`).join('')}</svg><div class="analytics-trend-labels"><span>${daily[0].day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span><span>Last 14 days · records per day</span><span>${daily[13].day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>`;
+		const doctorMetrics = window.HospitalAnalytics.doctorMetrics(state.data.doctors, state.data.labOrders);
+		const doctorQuery = state.analytics.doctorSearch.trim().toLowerCase();
+		const filteredDoctors = state.data.doctors.filter(doctor => !doctorQuery || `${doctor.name} ${doctor.specialty || ''}`.toLowerCase().includes(doctorQuery));
+		const doctorPageCount = Math.ceil(filteredDoctors.length / state.analytics.doctorPageSize);
+		state.analytics.doctorPage = Math.min(state.analytics.doctorPage, Math.max(0, doctorPageCount - 1));
+		const doctorCards = filteredDoctors.slice(state.analytics.doctorPage * state.analytics.doctorPageSize, (state.analytics.doctorPage + 1) * state.analytics.doctorPageSize).map(doctor => {
+			const values = doctorMetrics.get(doctor.id);
+			const periodValues = [['Today', values.today], ['This week', values.week], ['This month', values.month], ['Total forever', values.all]];
+			return `<article class="doctor-analytics-card"><header><div><span class="analytics-kicker">REFERRING DOCTOR</span><h3>${escapeHtml(doctor.name)}</h3><small>${escapeHtml(doctor.specialty || 'Specialty not listed')}</small></div><span class="doctor-analytics-mark">↗</span></header><div class="doctor-analytics-periods">${periodValues.map(([label, stats]) => `<div class="doctor-analytics-period"><span>${label}</span><strong>${stats.tests.toLocaleString()}</strong><small>tests · ${stats.patients.toLocaleString()} patients</small></div>`).join('')}</div></article>`;
+		}).join('') || `<div class="empty">${state.data.doctors.length ? 'No doctors match this search.' : 'Add doctors to see referral analytics.'}</div>`;
+		const doctorPagination = filteredDoctors.length > state.analytics.doctorPageSize ? `<div class="analytics-pagination"><span>${(state.analytics.doctorPage * state.analytics.doctorPageSize + 1).toLocaleString()}–${Math.min((state.analytics.doctorPage + 1) * state.analytics.doctorPageSize, filteredDoctors.length).toLocaleString()} of ${filteredDoctors.length.toLocaleString()} doctors</span><div class="inline-actions"><button class="button button-secondary button-small" data-action="analytics-doctor-page" data-step="-1" ${state.analytics.doctorPage <= 0 ? 'disabled' : ''}>Previous</button><span>Page ${state.analytics.doctorPage + 1} / ${doctorPageCount}</span><button class="button button-secondary button-small" data-action="analytics-doctor-page" data-step="1" ${state.analytics.doctorPage + 1 >= doctorPageCount ? 'disabled' : ''}>Next</button></div></div>` : '';
+		const topTests = new Map();
+		for (const order of state.data.labOrders) {
+			if (!isInAnalyticsPeriod(order, period)) continue;
+			for (const test of order.tests || []) {
+				const key = test.name || test.code || 'Unspecified test';
+				const item = topTests.get(key) || { count: 0, revenue: 0 };
+				item.count += 1;
+				item.revenue += Number(test.price || 0);
+				topTests.set(key, item);
+			}
+		}
+		const testQuery = state.analytics.testSearch.trim().toLowerCase();
+		const testRanking = [...topTests.entries()].filter(([name]) => !testQuery || name.toLowerCase().includes(testQuery)).sort((left, right) => right[1].count - left[1].count);
+		const testPageCount = Math.ceil(testRanking.length / state.analytics.testPageSize);
+		state.analytics.testPage = Math.min(state.analytics.testPage, Math.max(0, testPageCount - 1));
+		state.analytics.testCount = testRanking.length;
+		const maxTests = Math.max(1, testRanking[0]?.[1].count || 0);
+		const pageTests = testRanking.slice(state.analytics.testPage * state.analytics.testPageSize, (state.analytics.testPage + 1) * state.analytics.testPageSize);
+		const testMix = pageTests.map(([name, item]) => `<div class="analytics-rank-row"><div><strong>${escapeHtml(name)}</strong><span>${item.count.toLocaleString()} tests · ${money(item.revenue)}</span></div><i><b style="width:${Math.max(3, item.count / maxTests * 100)}%"></b></i></div>`).join('') || '<div class="empty">No diagnostic tests in this period.</div>';
+		const testPagination = testRanking.length > state.analytics.testPageSize ? `<div class="analytics-pagination"><span>${(state.analytics.testPage * state.analytics.testPageSize + 1).toLocaleString()}–${Math.min((state.analytics.testPage + 1) * state.analytics.testPageSize, testRanking.length).toLocaleString()} of ${testRanking.length.toLocaleString()} tests</span><div class="inline-actions"><button class="button button-secondary button-small" data-action="analytics-test-page" data-step="-1" ${state.analytics.testPage <= 0 ? 'disabled' : ''}>Previous</button><span>Page ${state.analytics.testPage + 1} / ${testPageCount}</span><button class="button button-secondary button-small" data-action="analytics-test-page" data-step="1" ${state.analytics.testPage + 1 >= testPageCount ? 'disabled' : ''}>Next</button></div></div>` : '';
+		const cabinUsage = new Map();
+		for (const booking of state.data.bookings) {
+			if (!isInAnalyticsPeriod(booking, period)) continue;
+			const item = cabinUsage.get(booking.cabinId) || { bookings: 0, days: 0, billed: 0 };
+			item.bookings += 1;
+			item.days += Number(booking.days || 0);
+			item.billed += Number(booking.net || 0);
+			cabinUsage.set(booking.cabinId, item);
+		}
+		const cabins = [...cabinUsage.entries()].sort((left, right) => right[1].days - left[1].days);
+		const cabinRows = cabins.map(([cabinId, item]) => `<tr><td><strong>${escapeHtml(cabinName(cabinId))}</strong></td><td>${item.bookings.toLocaleString()}</td><td>${item.days.toLocaleString()}</td><td>${money(item.billed)}</td></tr>`);
+		const indoorUsage = new Map();
+		for (const booking of state.data.bookings) {
+			if (!isInAnalyticsPeriod(booking, period)) continue;
+			for (const service of booking.extras || []) {
+				if (indoorFeeKind(service.name)) continue;
+				const key = service.id || `${service.parentName || ''}/${service.name}`;
+				const item = indoorUsage.get(key) || { name: service.name, parentName: service.parentName || '', count: 0, revenue: 0 };
+				item.count += 1;
+				item.revenue += Number(service.price || 0);
+				indoorUsage.set(key, item);
+			}
+		}
+		const indoorRows = [...indoorUsage.values()].sort((left, right) => right.count - left.count).map(item => `<tr><td><strong>${escapeHtml(item.parentName ? `${item.parentName} / ${item.name}` : item.name)}</strong></td><td>${item.count.toLocaleString()}</td><td>${money(item.revenue)}</td></tr>`);
+		const pageSize = state.analytics.pageSize;
+		const pageCount = Math.ceil(sortedRecords.length / pageSize);
+		state.analytics.page = Math.min(state.analytics.page, Math.max(0, pageCount - 1));
+		const start = state.analytics.page * pageSize;
+		const rows = sortedRecords.slice(start, start + pageSize).map(record => `<tr><td><strong>${escapeHtml(record.billId || record.recordId || record.bookingId)}</strong></td><td>${escapeHtml(record.patientName)}</td><td>${escapeHtml(record.kindLabel || (record.testNames ? 'Diagnostics' : record.doctorId ? 'Doctor visit' : 'Cabin booking'))}</td><td>${dateTime(record.createdAt || record.visitAt || record.startAt)}</td><td>${money(record.net ?? record.price ?? 0)}</td><td>${money(record.advance || 0)}</td><td>${money(record.due || 0)}</td><td><button class="button button-secondary button-small" data-action="view-record" data-kind="${recordKind(record)}" data-id="${escapeHtml(record.id)}">View</button></td></tr>`);
+		const customDates = period === 'custom' ? `<input class="control" aria-label="Analytics from date" type="date" data-analytics-date="from" value="${escapeHtml(state.analytics.from || '')}"><input class="control" aria-label="Analytics to date" type="date" data-analytics-date="to" value="${escapeHtml(state.analytics.to || '')}">` : '';
+		const receivedPercent = totals.net ? Math.round(totals.received / totals.net * 100) : 0;
+		const workflowRows = Object.entries(advanced.workflows).map(([kind, count]) => {
+			const label = ({ diagnostics: 'Diagnostics', appointments: 'Appointments', admissions: 'Cabin admissions' })[kind];
+			const percent = sortedRecords.length ? Math.round(count / sortedRecords.length * 100) : 0;
+			return `<div class="analytics-breakdown-row"><span>${label}</span><strong>${count.toLocaleString()} <small>${percent}%</small></strong><i><b style="width:${percent}%"></b></i></div>`;
 		}).join('');
-		const totals = records.reduce((result, record) => { result.net += Number(record.net || record.price || 0); result.received += Number(record.advance || 0); result.due += Number(record.due || 0); return result; }, { net: 0, received: 0, due: 0 });
-		return `${pageHeading('Hospital analytics', 'A practical view of volume, collected payments and outstanding balances.')}${metrics([{ label: "Today's records", value: current.length }, { label: "Today's received", value: money(current.reduce((sum, item) => sum + Number(item.advance || 0), 0)), accent: true }, { label: 'All-time received', value: money(totals.received) }, { label: 'Estimated outstanding', value: money(totals.due) }])}<div class="two-column">${panel('Activity · last 7 days', `<div class="chart">${days}</div>`)}${panel('All-time overview', `<div class="summary-box"><div class="summary-row"><span>Total records</span><b>${records.length}</b></div><div class="summary-row"><span>Gross billed</span><b>${money(totals.net)}</b></div><div class="summary-row"><span>Received</span><b>${money(totals.received)}</b></div><div class="summary-row total"><span>Outstanding</span><b>${money(totals.due)}</b></div></div>`)}</div>`;
+		const ageRows = Object.entries(advanced.ageBands).map(([label, count]) => {
+			const percent = sortedRecords.length ? Math.round(count / sortedRecords.length * 100) : 0;
+			return `<div class="analytics-breakdown-row"><span>${label}</span><strong>${count.toLocaleString()} <small>${percent}%</small></strong><i><b style="width:${percent}%"></b></i></div>`;
+		}).join('');
+		const statusRows = Object.entries(advanced.statuses).sort((left, right) => right[1] - left[1]).map(([label, count]) =>
+			`<div class="analytics-status-row"><span>${escapeHtml(label)}</span><strong>${count.toLocaleString()}</strong></div>`
+		).join('') || '<div class="empty">No activity in this period.</div>';
+		const monthlyLabels = state.analytics.monthlyTrend.map(month => `<span>${escapeHtml(month.label)}</span>`).join('');
+		const monthlyAccessible = state.analytics.monthlyTrend.map(month => `<li>${escapeHtml(month.label)}: ${money(month.billed)} billed, ${money(month.received)} collected, ${month.records} records</li>`).join('');
+		const monthlyEmpty = state.analytics.monthlyTrend.every(month => !month.billed && !month.received);
+		const pagination = `<div class="analytics-pagination"><span>${sortedRecords.length ? `Showing ${start + 1}–${Math.min(start + pageSize, sortedRecords.length)} of ${sortedRecords.length.toLocaleString()} records` : 'No records in this period'}</span><div class="inline-actions"><label class="field-hint">Rows <select class="control analytics-page-size" data-analytics-page-size><option ${pageSize === 25 ? 'selected' : ''}>25</option><option ${pageSize === 50 ? 'selected' : ''}>50</option><option ${pageSize === 100 ? 'selected' : ''}>100</option></select></label><button class="button button-secondary button-small" data-action="analytics-page" data-step="-1" ${state.analytics.page <= 0 ? 'disabled' : ''}>Previous</button><span>Page ${sortedRecords.length ? state.analytics.page + 1 : 0} / ${pageCount}</span><button class="button button-secondary button-small" data-action="analytics-page" data-step="1" ${state.analytics.page + 1 >= pageCount ? 'disabled' : ''}>Next</button></div></div>`;
+		return `${pageHeading('Hospital analytics', 'Explore activity, financial health, patient trends and service utilization across flexible date ranges.')}<div class="toolbar analytics-toolbar"><label class="field-hint">Reporting period <select class="control" data-analytics-period><option value="today" ${period === 'today' ? 'selected' : ''}>Today</option><option value="week" ${period === 'week' ? 'selected' : ''}>This week</option><option value="month" ${period === 'month' ? 'selected' : ''}>This month</option><option value="year" ${period === 'year' ? 'selected' : ''}>This year</option><option value="30" ${period === '30' ? 'selected' : ''}>Last 30 days</option><option value="custom" ${period === 'custom' ? 'selected' : ''}>Custom range</option><option value="all" ${period === 'all' ? 'selected' : ''}>All time</option></select></label>${customDates}</div>${metrics([{ label: 'Patient records', value: sortedRecords.length.toLocaleString(), note: 'In selected period' }, { label: 'Unique patients', value: advanced.patients.toLocaleString(), note: `${advanced.repeatPatients.toLocaleString()} returning patients` }, { label: 'Diagnostic tests', value: totals.tests.toLocaleString(), note: 'Units registered' }, { label: 'Billed / received', value: `${money(totals.net)} / ${money(totals.received)}`, note: `${receivedPercent}% collected`, accent: true }, { label: 'Outstanding balance', value: money(totals.due), note: `${advanced.outstandingRecords.toLocaleString()} records with a balance` }, { label: 'Average bill', value: money(advanced.averageBill), note: 'Per patient record' }, { label: 'Paid records', value: advanced.paidRecords.toLocaleString(), note: 'No amount due' }, { label: 'Average collection', value: `${advanced.collectionRate}%`, note: 'Received against billed' }])}<div class="analytics-overview-grid analytics-overview-grid--visual">${panel('12-month revenue & collection', `<div class="analytics-3d-wrap"><div class="analytics-3d-chart" data-analytics-3d></div>${monthlyEmpty ? '<p class="analytics-3d-empty">No billing activity in the last 12 months.</p>' : ''}<div class="analytics-3d-tooltip" hidden></div></div><div class="analytics-3d-labels" aria-hidden="true">${monthlyLabels}</div><div class="analytics-3d-legend"><span><i></i>Billed</span><span><i></i>Collected</span></div><ul class="visually-hidden">${monthlyAccessible}</ul>`)}${panel('Patient activity · last 14 days', chart)}${panel(`Payment position · ${analyticsPeriodLabel(period)}`, `<div class="analytics-payment-ring" style="--collection:${receivedPercent}%"><strong>${receivedPercent}%</strong><span>collected</span></div><div class="summary-box"><div class="summary-row"><span>Billed</span><b>${money(totals.net)}</b></div><div class="summary-row"><span>Received</span><b>${money(totals.received)}</b></div><div class="summary-row total"><span>Outstanding</span><b>${money(totals.due)}</b></div></div>`)}</div><div class="analytics-breakdown-grid">${panel('Care workflow mix', `<div class="analytics-breakdown-list">${workflowRows}</div>`)}${panel('Patient age profile', `<div class="analytics-breakdown-list">${ageRows}</div>`)}${panel('Record status & repeat visits', `<div class="analytics-status-list">${statusRows}</div><div class="analytics-repeat-note"><strong>${advanced.repeatPatients.toLocaleString()}</strong><span>patients with repeat records in this period</span></div>`)}</div><section class="analytics-section"><div class="analytics-section-heading"><div><span class="analytics-kicker">REFERRAL PERFORMANCE</span><h2>Doctor test referrals</h2><p>Billable tests and unique patients credited to each referring doctor.</p></div></div><div class="toolbar analytics-doctor-toolbar"><div class="search-field"><span>⌕</span><input data-analytics-doctor-search placeholder="Search doctors or specialties" value="${escapeHtml(state.analytics.doctorSearch)}"></div><span class="field-hint">${filteredDoctors.length.toLocaleString()} doctors</span></div><div class="doctor-analytics-grid">${doctorCards}</div>${doctorPagination}</section><div class="analytics-overview-grid">${panel(`Most requested tests · ${analyticsPeriodLabel(period)}`, `<div class="toolbar analytics-doctor-toolbar"><div class="search-field"><span>⌕</span><input data-analytics-test-search placeholder="Search tests in this period" value="${escapeHtml(state.analytics.testSearch)}"></div><span class="field-hint">${testRanking.length.toLocaleString()} tests</span></div><div class="analytics-ranking">${testMix}</div>${testPagination}`)}${panel(`Cabin utilization · ${analyticsPeriodLabel(period)}`, table(['Cabin', 'Admissions', 'Booked days', 'Net billed'], cabinRows))}${panel(`Cabin services · ${analyticsPeriodLabel(period)}`, table(['Service item', 'Selected', 'Billed'], indoorRows))}</div><section class="analytics-section analytics-records"><div class="analytics-section-heading"><div><span class="analytics-kicker">RECORD EXPLORER</span><h2>Activity detail</h2><p>Search and page through records in the selected date range.</p></div></div><div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search patient, record or service" value="${escapeHtml(state.query)}"></div>${scanControl()}</div>${panel('Filtered records', `${table(['Record', 'Patient', 'Service', 'Date', 'Net', 'Received', 'Due', ''], rows)}${pagination}`)}</section>`;
+	}
+
+	function analyticsPeriodLabel(period) {
+		return ({ today: 'today', week: 'this week', month: 'this month', year: 'this year', '30': 'last 30 days', custom: 'custom range', all: 'all time' })[period] || 'selected period';
+	}
+
+	function isInAnalyticsPeriod(record, period, now = new Date()) {
+		const timestamp = new Date(record.createdAt || record.visitAt || record.startAt);
+		if (!Number.isFinite(timestamp.getTime())) return false;
+		if (period === 'all') return true;
+		if (period === 'custom') {
+			if (state.analytics.from && timestamp < new Date(`${state.analytics.from}T00:00:00`)) return false;
+			if (state.analytics.to && timestamp > new Date(`${state.analytics.to}T23:59:59.999`)) return false;
+			return true;
+		}
+		if (period === '30') return timestamp >= new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+		const start = window.HospitalAnalytics.getPeriodStart(period, now);
+		return !start || timestamp >= start;
+	}
+
+	function matchesAnalyticsSearch(record) {
+		const query = state.query.trim().toLowerCase();
+		if (!query) return true;
+		if (!state.searchResults || state.searchResults.query !== query) {
+			state.searchResults = { query, items: getSearchIndex().matches(query) };
+		}
+		return state.searchResults.items.has(record);
+	}
+
+	function renderLeads() {
+		const records = allRecords().filter(searchRecord).sort(byDateDesc);
+		const patients = new Map();
+		for (const record of records) {
+			const key = patientKey(record);
+			if (!patients.has(key)) patients.set(key, []);
+			patients.get(key).push(record);
+		}
+		const rows = [...patients.entries()].map(([key, history]) => {
+			const patient = history[0];
+			return `<tr><td><strong>${escapeHtml(patient.patientName)}</strong><br><small>${escapeHtml(patient.contact || 'No contact')}</small></td><td>${history.length}</td><td>${dateTime(history[0].createdAt || history[0].visitAt || history[0].startAt)}</td><td>${money(history.reduce((total, record) => total + Number(record.net || record.price || 0), 0))}</td><td>${money(history.reduce((total, record) => total + Number(record.due || 0), 0))}</td><td><button class="button button-secondary button-small" data-action="patient-history" data-key="${escapeHtml(key)}">View history</button></td></tr>`;
+		});
+		return `${pageHeading('Patient leads', 'All registered patient records across diagnostics, appointments and cabin admissions.')}${metrics([{ label: 'Unique patients', value: patients.size }, { label: 'Patient records', value: records.length }, { label: 'Billed total', value: money(records.reduce((total, record) => total + Number(record.net || record.price || 0), 0)), accent: true }, { label: 'Outstanding', value: money(records.reduce((total, record) => total + Number(record.due || 0), 0)) }])}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search patient or any record detail" value="${escapeHtml(state.query)}"></div>${scanControl()}</div>${panel('All-time patient register', table(['Patient', 'Records', 'Latest activity', 'Billed', 'Due', ''], rows))}`;
+	}
+
+	function patientKey(record) {
+		return record.contact?.trim() ? `contact:${record.contact.trim().replace(/\D/g, '')}` : `name:${String(record.patientName || '').trim().toLowerCase()}:${record.age || ''}:${record.gender || ''}`;
+	}
+
+	function renderPatientHistory(modal) {
+		const records = allRecords().filter(record => patientKey(record) === modal.key).sort(byDateDesc);
+		if (!records.length) return '';
+		const patient = records[0];
+		const rows = records.map(record => `<tr><td>${escapeHtml(record.billId || record.recordId || record.bookingId)}</td><td>${escapeHtml(record.kindLabel || (record.testNames ? 'Diagnostics' : record.doctorId ? 'Doctor visit' : 'Cabin booking'))}</td><td>${escapeHtml(record.testNames || (record.doctorId ? doctorName(record.doctorId) : cabinName(record.cabinId)))}</td><td>${dateTime(record.createdAt || record.visitAt || record.startAt)}</td><td>${money(record.net || record.price || 0)}</td><td>${money(record.advance || 0)}</td><td>${money(record.due || 0)}</td><td><button class="button button-secondary button-small" data-action="view-record" data-kind="${recordKind(record)}" data-id="${escapeHtml(record.id)}">View slip</button></td></tr>`);
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide" role="dialog" aria-modal="true"><header class="modal-head"><h2>Patient history · ${escapeHtml(patient.patientName)}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body"><div class="patient-history-summary"><span>Contact<strong>${escapeHtml(patient.contact || '—')}</strong></span><span>Age / gender<strong>${escapeHtml(`${patient.age || '—'} / ${patient.gender || '—'}`)}</strong></span><span>Record count<strong>${records.length}</strong></span><span>Total billed<strong>${money(records.reduce((sum, record) => sum + Number(record.net || record.price || 0), 0))}</strong></span><span>Total due<strong>${money(records.reduce((sum, record) => sum + Number(record.due || 0), 0))}</strong></span></div>${table(['Record', 'Service', 'Details', 'Date', 'Net', 'Received', 'Due', ''], rows)}</div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button></footer></section></div>`;
 	}
 
 	function renderModal() {
 		const modal = state.modal;
 		if (modal.type === 'confirm') return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>${escapeHtml(modal.title)}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body"><p style="font-size:12px;line-height:1.6;color:#65736c">${escapeHtml(modal.message)}</p></div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Cancel</button><button class="button button-danger" data-action="confirm-action">${escapeHtml(modal.confirmLabel || 'Continue')}</button></footer></section></div>`;
 		if (modal.type === 'summary') return renderSummaryModal();
+		if (modal.type === 'referrers') return renderAgentReferrers(modal);
+		if (modal.type === 'profile') return renderReferrerProfile(modal);
+		if (modal.type === 'referral-dashboard') return renderReferralDashboard(modal);
+		if (modal.type === 'patient-history') return renderPatientHistory(modal);
 		if (modal.type === 'item') return renderItemModal(modal);
 		if (modal.type === 'booking') return renderBookingModal(modal);
 		if (modal.type === 'renew') return renderRenewModal(modal);
@@ -292,13 +586,20 @@
 			tests: [['code', 'Code', 'text', true], ['name', 'Test name', 'text', true], ['price', 'Price (৳)', 'number', true]],
 			doctors: [['name', 'Doctor name', 'text', true], ['title', 'Title / qualification', 'text'], ['specialty', 'Specialty', 'text', true], ['contact', 'Contact number', 'tel'], ['visits', 'Visiting time', 'text'], ['newPrice', 'New patient fee (৳)', 'number', true], ['oldPrice', 'Returning patient fee (৳)', 'number', true]],
 			cabins: [['name', 'Cabin name', 'text', true], ['price', 'Daily rate (৳)', 'number', true]],
+			indoorServices: [['name', 'Service item name', 'text', true], ['price', 'Parent item price (৳)', 'number', false]],
 			agents: [['name', 'Agent name', 'text', true], ['contact', 'Contact number', 'tel']],
 			referrers: [['name', 'Referrer name', 'text', true], ['contact', 'Contact number', 'tel']]
 		}[type];
-		const title = `${editing ? 'Edit' : 'Add'} ${type === 'tests' ? 'clinical test' : type === 'doctors' ? 'doctor' : type === 'cabins' ? 'cabin' : type === 'agents' ? 'marketing agent' : 'special referrer'}`;
-		const fileButton = type === 'doctors' ? `<div class="field full"><label>Profile photo</label><div class="inline-actions"><input class="control" name="photo" value="${escapeHtml(item.photo || '')}" placeholder="Image file path or choose an image"><button class="button button-secondary button-small" type="button" data-action="choose-image">Choose image</button></div></div>` : '';
+		const title = `${editing ? 'Edit' : 'Add'} ${type === 'tests' ? 'clinical test' : type === 'doctors' ? 'doctor' : type === 'cabins' ? 'cabin' : type === 'indoorServices' ? 'indoor service item' : type === 'agents' ? 'marketing agent' : 'special referrer'}`;
+		const fileButton = type === 'indoorServices'
+			? `<div class="field full service-children-editor"><div class="service-children-heading"><div><label>Multiple items · Optional</label><span class="field-hint">Add child items with their own name and price.</span></div><button class="button button-secondary button-small" type="button" data-action="add-service-child">＋ Add child item</button></div><div class="service-child-list">${(item.children || []).map(child => serviceChildEditor(child)).join('')}</div></div>`
+			: '';
 		const agentSelector = type === 'referrers' ? `<div class="field full"><label for="agentId">Marketing agent</label><select id="agentId" name="agentId" class="control">${state.data.agents.map(agent => `<option value="${escapeHtml(agent.id)}" ${item.agentId === agent.id ? 'selected' : ''}>${escapeHtml(agent.name)}</option>`).join('')}</select></div>` : '';
 		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><header class="modal-head"><h2 id="modal-title">${title}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><form id="item-form" data-kind="${type}" data-id="${escapeHtml(item.id || '')}"><div class="modal-body"><div class="form-grid">${fields.map(([name, label, inputType, required]) => `<div class="field"><label for="item-${name}">${label}</label><input id="item-${name}" name="${name}" type="${inputType}" value="${escapeHtml(item[name] ?? '')}" ${required ? 'required' : ''} ${inputType === 'number' ? 'min="0" step="1"' : ''}></div>`).join('')}${fileButton}${agentSelector}</div></div><footer class="modal-foot"><button class="button button-secondary" type="button" data-action="close-modal">Cancel</button><button class="button button-primary" type="submit">${editing ? 'Save changes' : 'Add record'}</button></footer></form></section></div>`;
+	}
+
+	function serviceChildEditor(child = {}) {
+		return `<div class="service-child-row"><input class="control" name="childName" value="${escapeHtml(child.name || '')}" placeholder="Child item name" aria-label="Child item name"><input class="control" name="childPrice" type="number" min="0" step="1" value="${escapeHtml(child.price ?? '')}" placeholder="Price" aria-label="Child item price"><button class="icon-button" type="button" data-action="remove-service-child" aria-label="Remove child item">×</button><input type="hidden" name="childId" value="${escapeHtml(child.id || '')}"></div>`;
 	}
 
 	function renderBookingModal(modal) {
@@ -307,7 +608,43 @@
 		const isEdit = Boolean(booking);
 		const defaultStart = booking?.endAt ? toDateInput(booking.endAt) : toDateInput(nowISO());
 		const defaultEnd = booking?.endAt ? toDateInput(new Date(new Date(booking.endAt).getTime() + 86400000).toISOString()) : toDateInput(new Date(Date.now() + 86400000).toISOString());
-		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>${isEdit ? 'Renew cabin stay' : `Admit patient · ${escapeHtml(cabin?.name || '')}`}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><form id="booking-form" data-id="${escapeHtml(booking?.id || '')}" data-cabin="${escapeHtml(booking?.cabinId || cabin?.id || '')}"><div class="modal-body"><div class="form-grid">${field('Patient name', 'patientName', booking?.patientName || '', 'text', true)}${field('Contact number', 'contact', booking?.contact || '', 'tel', true)}${field('Age', 'age', booking?.age || '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true, false, null, booking?.gender)}${field('Start date and time', 'startAt', defaultStart, 'datetime-local', true)}${field('Release date and time', 'endAt', defaultEnd, 'datetime-local', true)}${field('Additional items (name:price)', 'extras', booking?.extrasText || '', 'text')}${field('Discount (৳)', 'discount', booking?.discount || '0', 'number')}${field('Advance received (৳)', 'advance', booking?.advance || '0', 'number')}${field('Daily cabin rate (৳)', 'price', cabin?.price ?? booking?.dailyRate ?? 0, 'number', true)}${field('Notes', 'notes', booking?.notes || '', 'text')}</div><div class="summary-box"><div class="summary-row"><span>Estimate</span><b>${money((cabin?.price ?? booking?.dailyRate ?? 0) + sumExtras(booking?.extras || []))} / day</b></div><div class="summary-row"><span>Cabin</span><b>${escapeHtml(cabin?.name || cabinName(booking?.cabinId))}</b></div></div></div><footer class="modal-foot"><button class="button button-secondary" type="button" data-action="close-modal">Cancel</button><button class="button button-primary" type="submit">${isEdit ? 'Save renewal' : 'Save admission'}</button></footer></form></section></div>`;
+		const selectedCounts = (booking?.extras || []).reduce((counts, service) => { if (service.id) counts[service.id] = (counts[service.id] || 0) + 1; return counts; }, {});
+		const serviceOptions = state.data.indoorServices.map(service => {
+			const kind = indoorFeeKind(service.name);
+			const automatic = kind !== '';
+			const parentItem = service.children?.length && Number(service.price) > 0
+				? serviceOption(service.id, service.name, service.price, selectedCounts[service.id], false)
+				: !service.children?.length && !automatic
+					? serviceOption(service.id, service.name, service.price, selectedCounts[service.id], false)
+					: '';
+			const childItems = (service.children || []).map(child => serviceOption(
+				`child::${service.id}::${child.id}`,
+				child.name,
+				child.price,
+				selectedCounts[child.id],
+				false,
+				service.name
+			)).join('');
+			const autoItem = automatic
+				? serviceOption('', service.name, service.price, 0, true)
+				: '';
+			if (!parentItem && !childItems && !autoItem) return '';
+			return `<section class="service-option-group">${service.children?.length ? `<strong class="service-group-title">${escapeHtml(service.name)}</strong>` : ''}${autoItem}${parentItem}${childItems}</section>`;
+		}).join('') || '<span class="field-hint">Add service items in Management → Cabins.</span>';
+		const builtInFees = modal.addServices ? 0 : automaticIndoorServices(!isEdit).reduce((sum, item) => sum + item.price, 0);
+		const defaultEstimate = (modal.addServices ? 0 : (cabin?.price ?? booking?.dailyRate ?? 0)) + builtInFees;
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>${modal.addServices ? 'Add cabin service items' : isEdit ? 'Renew cabin stay' : `Admit patient · ${escapeHtml(cabin?.name || '')}`}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><form id="booking-form" data-id="${escapeHtml(booking?.id || '')}" data-add-services="${Boolean(modal.addServices)}" data-cabin="${escapeHtml(booking?.cabinId || cabin?.id || '')}"><div class="modal-body"><div class="form-grid">${field('Patient name', 'patientName', booking?.patientName || '', 'text', true)}${field('Contact number', 'contact', booking?.contact || '', 'tel', true)}${field('Age', 'age', booking?.age || '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true, false, null, booking?.gender)}${field('Start date and time', 'startAt', defaultStart, 'datetime-local', true)}${field('Duration (days)', 'durationDays', 1, 'number', true)}${field('Release date and time', 'endAt', defaultEnd, 'datetime-local', true)}<div class="field full"><label>Indoor service items</label><input class="control service-search" type="search" data-service-search placeholder="Find a parent or child service"><div class="service-options">${serviceOptions}</div></div>${field('Discount (৳)', 'discount', booking?.discount || '0', 'number')}${field('Advance received (৳)', 'advance', booking?.advance || '0', 'number')}${field('Daily cabin rate (৳)', 'price', cabin?.price ?? booking?.dailyRate ?? 0, 'number', true)}${field('Notes', 'notes', booking?.notes || '', 'text')}</div><div class="summary-box"><div class="summary-row"><span>Estimated bill</span><b id="booking-estimate">${money(defaultEstimate)}</b></div><div class="summary-row"><span>Cabin</span><b>${escapeHtml(cabin?.name || cabinName(booking?.cabinId))}</b></div><div class="field-hint">Cabin/bed and admission charges are included automatically. Select any additional parent or child services above.</div></div></div><footer class="modal-foot"><button class="button button-secondary" type="button" data-action="close-modal">Cancel</button><button class="button button-primary" type="submit">${modal.addServices ? 'Add selected items' : isEdit ? 'Save renewal' : 'Save admission'}</button></footer></form></section></div>`;
+	}
+
+	function serviceOption(value, name, price, alreadyAdded, automatic = false, parentName = '') {
+		return `<label class="service-option ${automatic ? 'service-option-automatic' : ''}"><input type="checkbox" name="${automatic ? '' : 'serviceIds'}" value="${escapeHtml(value)}" ${automatic ? 'checked disabled' : ''}><span><strong>${escapeHtml(name)}</strong><small>${parentName ? `${escapeHtml(parentName)} · ` : ''}${money(price)}${automatic ? ' · Included automatically' : alreadyAdded ? ` · Already added ×${alreadyAdded}` : ''}</small></span></label>`;
+	}
+
+	function indoorFeeKind(name) {
+		const normalized = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+		if (['admission', 'admission fee', 'admission charge'].includes(normalized)) return 'admission';
+		if (['cabin/bed charge', 'cabin charge', 'bed charge'].includes(normalized)) return 'cabin';
+		return '';
 	}
 
 	function renderRenewModal(modal) {
@@ -319,8 +656,55 @@
 		const records = allRecords().sort(byDateDesc);
 		const rows = records.map(record => `<tr><td>${escapeHtml(record.billId || record.recordId || record.bookingId)}</td><td>${escapeHtml(record.patientName)}</td><td>${escapeHtml(record.kindLabel || (record.testNames ? 'Diagnostic test' : record.doctorId ? 'Doctor visit' : 'Cabin booking'))}</td><td>${dateTime(record.createdAt || record.visitAt || record.startAt)}</td><td>${money(record.net || record.price)}</td><td>${money(record.advance)}</td><td>${money(record.due)}</td><td>${escapeHtml(record.status)}</td></tr>`).join('');
 		const summaryTable = records.length ? `<div class="table-wrap"><table><thead><tr><th>Reference</th><th>Patient</th><th>Service</th><th>Date</th><th>Net</th><th>Received</th><th>Due</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">No activity has been recorded yet.</div>`;
-		const contents = `<article class="print-sheet"><header class="print-head"><div><h2>Kabirhat Private Hospital</h2><span>Daily activity summary</span></div><div style="text-align:right">Generated ${dateTime(nowISO())}<br>${records.length} records</div></header>${summaryTable}<div class="print-note">Local operational summary. Patient information is confidential.</div></article>`;
-		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide" role="dialog" aria-modal="true"><header class="modal-head"><h2>Activity summary</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body">${contents}</div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-primary" data-action="print-summary-now">⎙&nbsp; Print summary</button></footer></section></div>`;
+		const contents = `<article class="print-sheet"><header class="print-head"><div class="print-brand-head">${hospitalLogo('print-hospital-logo')}<div><h2>${escapeHtml(HOSPITAL_NAME)}</h2><span>Daily activity summary</span></div></div><div style="text-align:right">Generated ${dateTime(nowISO())}<br>${records.length} records</div></header>${summaryTable}<div class="print-note">Local operational summary. Patient information is confidential.</div></article>`;
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide" role="dialog" aria-modal="true"><header class="modal-head"><h2>Activity summary</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body">${contents}</div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="print-summary-now">Print summary</button><button class="button button-primary" data-action="save-pdf" data-page-size="A4">Save PDF</button></footer></section></div>`;
+	}
+
+	function renderAgentReferrers(modal) {
+		const agent = state.data.agents.find(item => item.id === modal.agentId);
+		if (!agent) return '';
+		const children = state.data.referrers.filter(item => item.agentId === agent.id);
+		const rows = children.map(item => `<tr><td><div class="profile-cell">${profileImage(item)}<strong>${escapeHtml(item.name)}</strong></div></td><td>${escapeHtml(item.contact || '—')}</td><td><button class="button button-secondary button-small" data-action="view-referrer" data-id="${escapeHtml(item.id)}">Biodata</button></td></tr>`);
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide" role="dialog" aria-modal="true"><header class="modal-head"><h2>Special referrers · ${escapeHtml(agent.name)}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body">${table(['Referrer', 'Contact', ''], rows)}</div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button></footer></section></div>`;
+	}
+
+	function renderReferrerProfile(modal) {
+		const referrer = state.data.referrers.find(item => item.id === modal.id);
+		if (!referrer) return '';
+		const agent = state.data.agents.find(item => item.id === referrer.agentId);
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>Special referrer profile</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body profile-bio">${profileImage(referrer)}<h3>${escapeHtml(referrer.name)}</h3><p>${escapeHtml(referrer.contact || 'No contact listed')}</p><p>Marketing agent · ${escapeHtml(agent?.name || 'Unassigned')}</p></div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="edit-item" data-kind="referrers" data-id="${escapeHtml(referrer.id)}">Edit profile</button></footer></section></div>`;
+	}
+
+	function renderReferralDashboard(modal) {
+		const isAgent = modal.scope === 'agent';
+		const person = (isAgent ? state.data.agents : state.data.referrers).find(item => item.id === modal.id);
+		if (!person) return '';
+		const referrerIds = new Set(state.data.referrers.filter(item => item.agentId === person.id).map(item => item.id));
+		const directOrders = isAgent ? state.data.labOrders.filter(order => order.agentId === person.id && order.referralType !== 'special-referrer') : [];
+		const childOrders = isAgent ? state.data.labOrders.filter(order => referrerIds.has(order.referrerId)) : [];
+		const orders = isAgent ? [...directOrders, ...childOrders] : state.data.labOrders.filter(order => order.referrerId === person.id);
+		const timestamp = record => new Date(record.createdAt || record.visitAt || record.startAt).getTime();
+		const now = new Date();
+		const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+		const weekStart = dayStart - ((now.getDay() + 6) % 7) * 86400000;
+		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+		const countSince = start => orders.filter(record => timestamp(record) >= start).length;
+		const net = orders.reduce((sum, record) => sum + Number(record.net || 0), 0);
+		const due = orders.reduce((sum, record) => sum + Number(record.due || 0), 0);
+		const date = new Date(); date.setDate(date.getDate() + Number(modal.dayOffset || 0));
+		const dateLabel = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+		const query = String(modal.query || '').toLowerCase();
+		const attributed = modal.source === 'direct' ? directOrders : modal.source === 'child' ? childOrders : orders;
+		const daily = attributed.filter(record => new Date(timestamp(record)).toDateString() === date.toDateString()).filter(record => !query || `${record.patientName} ${record.contact} ${record.billId} ${record.testNames}`.toLowerCase().includes(query)).sort((left, right) => timestamp(right) - timestamp(left));
+		const page = Math.max(0, Number(modal.page) || 0);
+		const pageSize = 10;
+		const rows = daily.slice(page * pageSize, (page + 1) * pageSize).map(record => `<tr><td><strong>${escapeHtml(record.patientName)}</strong><br><small>${escapeHtml(record.contact)}</small></td><td>${escapeHtml(record.billId)}</td><td>${escapeHtml(record.testNames)}</td><td>${money(record.net)}</td><td>${money(record.due)}</td><td><button class="button button-secondary button-small" data-action="view-record" data-kind="labOrders" data-id="${escapeHtml(record.id)}">View slip</button></td></tr>`);
+		const directEarned = directOrders.reduce((sum, record) => sum + Number(record.net || 0), 0);
+		const childEarned = childOrders.reduce((sum, record) => sum + Number(record.net || 0), 0);
+		const directDue = directOrders.reduce((sum, record) => sum + Number(record.due || 0), 0);
+		const childDue = childOrders.reduce((sum, record) => sum + Number(record.due || 0), 0);
+		const childMetric = isAgent ? [{ label: 'Special referrers', value: referrerIds.size }, { label: 'Direct agent visits', value: directOrders.length }, { label: 'Direct earned / due', value: `${money(directEarned)} / ${money(directDue)}` }, { label: 'Child earned / due', value: `${money(childEarned)} / ${money(childDue)}` }] : [{ label: 'Parent agent', value: state.data.agents.find(agent => agent.id === person.agentId)?.name || 'Unassigned' }, { label: 'Referrer visits', value: orders.length }];
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide referral-dashboard" role="dialog" aria-modal="true"><header class="modal-head"><h2>${isAgent ? 'Agent analytics' : 'Special referrer analytics'} · ${escapeHtml(person.name)}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body">${metrics([{ label: 'Today', value: countSince(dayStart) }, { label: 'This week', value: countSince(weekStart) }, { label: 'This month', value: countSince(monthStart) }, { label: 'All-time patients', value: orders.length }, ...childMetric, { label: 'Total earned', value: money(net), accent: true }, { label: 'Dues remaining', value: money(due) }])}${isAgent ? `<div class="segmented-control"><button data-action="referral-source" data-source="all" class="${!modal.source || modal.source === 'all' ? 'active' : ''}">All</button><button data-action="referral-source" data-source="direct" class="${modal.source === 'direct' ? 'active' : ''}">Direct agent</button><button data-action="referral-source" data-source="child" class="${modal.source === 'child' ? 'active' : ''}">Special referrers</button></div>` : ''}<div class="referral-record-toolbar"><input class="control" data-referral-search aria-label="Search referred patients" placeholder="Search patients and bills" value="${escapeHtml(modal.query || '')}"><button class="button button-secondary button-small" data-action="focus-referral-scanner">▦ Scan</button><input class="scan-capture" data-referral-scan aria-label="Referral barcode scanner" autocomplete="off" tabindex="-1"></div><div class="referral-date-pager"><button class="icon-button" data-action="referral-day-prev" aria-label="Previous day">←</button><strong>${dateLabel}</strong><button class="icon-button" data-action="referral-day-next" aria-label="Next day">→</button></div>${table(['Patient', 'Bill', 'Services', 'Net', 'Due', ''], rows)}<div class="referral-pagination"><button class="button button-secondary button-small" data-action="referral-page-prev" ${page === 0 ? 'disabled' : ''}>Previous</button><span>${daily.length ? `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, daily.length)} of ${daily.length}` : 'No patients on this date'}</span><button class="button button-secondary button-small" data-action="referral-page-next" ${((page + 1) * pageSize >= daily.length) ? 'disabled' : ''}>Next</button></div></div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button></footer></section></div>`;
 	}
 
 	function renderRecordModal(modal) {
@@ -330,14 +714,93 @@
 		const isAppointment = modal.kind === 'appointments';
 		const title = record.billId || record.recordId || record.bookingId;
 		const serviceRows = isLab ? (record.tests || []).map(test => `<tr><td>${escapeHtml(test.code)}</td><td>${escapeHtml(test.name)}</td><td>${money(test.price)}</td></tr>`).join('') : '';
-		const details = isLab ? [['Patient', record.patientName], ['Age / gender', `${record.age} / ${record.gender}`], ['Contact', record.contact], ['Referring doctor', (record.doctors || []).map(item => item.name).join(', ') || '—'], ['Special referrer', record.referrerName || '—'], ['Registered', dateTime(record.createdAt)], ['Report delivery', dateTime(record.deliveryAt)], ['Report status', record.status], ['Full paid', record.fullPaid ? 'Yes' : 'No']]
-			: isAppointment ? [['Patient', record.patientName], ['Patient ID', record.patientId || record.recordId], ['Contact', record.contact], ['Age / gender', `${record.age} / ${record.gender}`], ['Doctor', doctorName(record.doctorId)], ['Visit time', dateTime(record.visitAt)], ['Patient type', record.patientType], ['Status', record.status]]
-				: [['Patient', record.patientName], ['Contact', record.contact], ['Cabin', cabinName(record.cabinId)], ['Admitted', dateTime(record.startAt)], ['Release', dateTime(record.endAt)], ['Duration', `${record.days} day(s)`], ['Status', record.status]];
-		const actionButton = modal.type === 'print' ? '' : `<footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-primary" data-action="print-record" data-kind="${modal.kind}" data-id="${record.id}">⎙&nbsp; Print</button></footer>`;
+		const details = isLab ? [['Patient', record.patientName], ['Age / gender', `${record.age} / ${record.gender}`], ['Contact', record.contact], ['Referring doctor', (record.doctors || []).map(item => item.name).join(', ') || '—'], ['Referral source', record.agentName || 'No referral'], ['Special referrer', record.referrerName || '—'], ['Remarks', record.remarks || '—'], ['Additional note', record.note || '—'], ['Extra description', record.description || '—'], ['Registered', dateTime(record.createdAt)], ['Report delivery', dateTime(record.deliveryAt)], ['Report status', record.status], ['Full paid', record.fullPaid ? 'Yes' : 'No']]
+			: isAppointment ? [['Patient', record.patientName], ['Patient ID', record.patientId || record.recordId], ['Contact', record.contact], ['Age / gender', `${record.age} / ${record.gender}`], ['Doctor', doctorName(record.doctorId)], ['Visit time', dateTime(record.visitAt)], ['Chamber time', `${record.fromTime || '—'} to ${record.toTime || '—'}`], ['Patient type', record.patientType], ['History record', record.historyRecordId || '—'], ['Status', record.status]]
+				: [['Patient', record.patientName], ['Slip No.', record.slipNo || '—'], ['Contact', record.contact], ['Age / gender', `${record.age || '—'} / ${record.gender || '—'}`], ['Cabin', cabinName(record.cabinId)], ['Admitted', dateTime(record.startAt)], ['Release', dateTime(record.endAt)], ['Duration', `${record.days} day(s)`], ['Daily rate', money(record.dailyRate)], ['Services', (record.extras || []).map(item => `${item.name} (${money(item.price)})`).join(', ') || '—'], ['Notes', record.notes || '—'], ['Status', record.status]];
+		const pageSize = isLab || isAppointment ? 'A5' : 'A4';
+		const actionButton = modal.type === 'print' ? '' : `<footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="print-record" data-kind="${modal.kind}" data-id="${record.id}">Print</button><button class="button button-primary" data-action="save-pdf" data-page-size="${pageSize}">Save PDF</button></footer>`;
 		const labTable = isLab ? `<div class="table-wrap"><table><thead><tr><th>Code</th><th>Test</th><th>Price</th></tr></thead><tbody>${serviceRows}</tbody></table></div>` : '';
 		const payment = !isAppointment ? `<div class="summary-box"><div class="summary-row"><span>Subtotal</span><b>${money(record.subtotal ?? record.net ?? record.price)}</b></div><div class="summary-row"><span>Discount</span><b>${money(record.discount)}</b></div><div class="summary-row"><span>Received</span><b>${money(record.advance)}</b></div><div class="summary-row total"><span>Net / due</span><b>${money(record.net ?? record.price)} / ${money(record.due)}</b></div>${isLab ? `<div class="summary-row"><span>Amount in words</span><b>${amountInWords(record.net)}</b></div>` : ''}</div>` : `<div class="summary-box"><div class="summary-row total"><span>Visit fee</span><b>${money(record.price)}</b></div></div>`;
-		const sheet = `<article class="print-sheet"><header class="print-head"><div><h2>Kabirhat Private Hospital</h2><span>Patient service record · Local copy</span></div><div style="text-align:right"><b>${escapeHtml(title)}</b><br>${dateTime(record.createdAt || record.visitAt || record.startAt)}</div></header><div class="form-grid" style="margin-top:16px">${details.map(([label, value]) => `<div><small style="color:#718078">${label}</small><div style="margin-top:3px;font-weight:600">${escapeHtml(value)}</div></div>`).join('')}</div>${labTable}${payment}<div class="print-note">Please retain this slip for your records. Thank you for choosing Kabirhat Private Hospital.</div></article>`;
-		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide" role="dialog" aria-modal="true"><header class="modal-head"><h2>${modal.type === 'print' ? 'Print preview' : `Record · ${escapeHtml(title)}`}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body">${sheet}</div>${actionButton}</section></div>`;
+		const sheet = isLab ? renderTestCashMemo(record) : modal.kind === 'bookings' ? renderIndoorBill(record) : `<article class="print-sheet ${isAppointment ? 'print-sheet--visit' : ''}"><header class="print-head"><div class="print-brand-head">${hospitalLogo('print-hospital-logo')}<div><h2>${escapeHtml(HOSPITAL_NAME)}</h2><span>Patient service record · Local copy</span></div></div><div style="text-align:right"><b>${escapeHtml(title)}</b><br>${dateTime(record.createdAt || record.visitAt || record.startAt)}</div></header><svg class="record-barcode" data-barcode="${escapeHtml(title)}"></svg><div class="form-grid" style="margin-top:16px">${details.map(([label, value]) => `<div><small style="color:#718078">${label}</small><div style="margin-top:3px;font-weight:600">${escapeHtml(value)}</div></div>`).join('')}</div>${labTable}${payment}<div class="print-note">Please retain this slip for your records. Thank you for choosing ${escapeHtml(HOSPITAL_NAME)}.</div></article>`;
+		const printActions = modal.type === 'print' ? `<footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="print-now">Print</button><button class="button button-primary" data-action="save-pdf" data-page-size="${pageSize}">Save PDF</button></footer>` : actionButton;
+		const recordInspector = `<details class="record-inspector"><summary>Full saved record</summary><pre>${escapeHtml(JSON.stringify(record, null, 2))}</pre></details>`;
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal wide" role="dialog" aria-modal="true"><header class="modal-head"><h2>${modal.type === 'print' ? 'Print preview' : `Record · ${escapeHtml(title)}`}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body">${sheet}${recordInspector}</div>${printActions}</section></div>`;
+	}
+
+	function renderTestCashMemo(record) {
+		const tests = (record.tests || []).map((test, index) => `<tr><td>${String(index + 1).padStart(2, '0')}</td><td>${escapeHtml(test.name)}</td><td>${money(test.price)}</td></tr>`).join('');
+		return `<article class="print-sheet print-sheet--cashmemo"><section class="cash-memo">
+			<header class="memo-header">${hospitalLogo('memo-mark')}<div><h2>${escapeHtml(HOSPITAL_NAME)}</h2><strong>Diagnostic Cash Memo</strong><small>Kabirhat, Noakhali · Reception: 01868-551839 · Office: 01762-913773</small></div><span class="memo-tag">CASH MEMO</span></header>
+			<div class="memo-meta"><b>Memo No: ${escapeHtml(record.billId)}</b><span>Date: ${dateOnly(record.createdAt)}</span></div>
+			<div class="memo-patient">
+				<div><span>Patient's Name</span><b>${escapeHtml(record.patientName)}</b></div>
+				<div><span>Mobile No.</span><b>${escapeHtml(record.contact)}</b></div>
+				<div class="memo-demographic"><span>Age</span><b>${escapeHtml(record.age)}</b></div>
+				<div class="memo-demographic"><span>Gender</span><b>${escapeHtml(record.gender)}</b></div>
+				<div><span>ID / Reg No.</span><b>${escapeHtml(record.billId)}</b></div>
+				<div class="memo-referrer"><span>Referring doctor</span><b>${escapeHtml((record.doctors || []).map(doctor => doctor.name).join(', ') || '—')}</b></div>
+			</div>
+			<table class="memo-table"><thead><tr><th>Sl. No.</th><th>Particular</th><th>Amount</th></tr></thead><tbody>${tests || '<tr><td colspan="3">No tests listed</td></tr>'}</tbody></table>
+			<div class="memo-bottom"><div class="memo-words"><span>Taka in Words</span><b>${escapeHtml(amountInWords(record.net))}</b><div class="memo-sign">Payment by: ____________________<br><br>____________________<br>Receiver's Signature</div></div><div class="memo-totals"><div><span>Total Taka</span><b>${money(record.subtotal)}</b></div><div><span>Discount</span><b>${money(record.discount)}</b></div><div><span>Advance</span><b>${money(record.advance)}</b></div><div><span>Due</span><b>${money(record.due)}</b></div></div></div>
+			<div class="memo-barcode"><svg data-barcode="${escapeHtml(record.billId)}"></svg></div>
+			<footer class="print-credit"><span class="print-motto">বিশ্বমানের সর্বাধুনিক চিকিৎসা সেবা প্রদানের মাধ্যমে, রোগীকে সুস্থ করে পরিবারের মুখে হাসি ফুটানই আমাদের অঙ্গীকার।</span><span class="developer-credit">Developed By : <img class="developer-logo" src="../site_assets/unreal_studio_icon.svg" alt=""> - Unreal Studio ©</span></footer>
+		</section></article>`;
+	}
+
+	function renderIndoorBill(record) {
+		const extras = record.extras || [];
+		const admissionTotal = extras.filter(item => indoorFeeKind(item.name) === 'admission').reduce((sum, item) => sum + Number(item.price || 0), 0);
+		const cabinTotal = extras.filter(item => indoorFeeKind(item.name) === 'cabin').reduce((sum, item) => sum + Number(item.price || 0), 0);
+		const rows = [
+			{ number: '01', label: 'Admission Fee', value: admissionTotal },
+			{ number: '02', label: 'Cabin/Bed Charge', value: Number(record.dailyRate || 0) * Number(record.days || 1) + cabinTotal },
+			{ number: '03', label: 'Investigation' },
+			{ label: 'a) Pathology', subcharge: true },
+			{ label: 'b) X-Ray', subcharge: true },
+			{ label: 'c) E.C.G', subcharge: true },
+			{ label: 'd) Ultrasonography', subcharge: true },
+			{ label: 'e) Endoscopy', subcharge: true },
+			{ label: 'f) Echocardiography', subcharge: true },
+			{ number: '04', label: 'Oxygen Charge' },
+			{ number: '05', label: 'O.T Charge' },
+			{ number: '06', label: 'Operation Charge' },
+			{ label: 'a) Surgeon Fee', subcharge: true },
+			{ label: 'b) 1st Asstt Fee', subcharge: true },
+			{ label: 'c) 2nd Asstt Fee', subcharge: true },
+			{ label: 'd) 3rd Asstt Fee', subcharge: true },
+			{ number: '07', label: 'Anesthesia Charge' },
+			{ number: '08', label: 'Delivery Charge' },
+			{ number: '09', label: 'Dressing Charge' },
+			{ number: '10', label: 'Transfusion Charge' },
+			{ number: '11', label: 'Cost of Medicine' },
+			{ number: '12', label: 'Consultant Fee' },
+			{ number: '13', label: 'Medical Board (Doctors)' },
+			{ number: '14', label: 'Medical Board (Clinic)' },
+			{ number: '15', label: 'Stitch of Charge' },
+			{ number: '16', label: 'Ambulance Fare' },
+			{ number: '17', label: 'Ryles-Tub, Enema, Catheterization / IV Cannula Charge' },
+			{ number: '18', label: 'Nabulization' },
+			{ number: '19', label: 'Phototherapy' },
+			{ number: '20', label: 'Cardiac Monitor' },
+			{ number: '21', label: 'Instrument Charge' }
+		];
+		extras.filter(service => !indoorFeeKind(service.name)).forEach(service => rows.push({
+			number: String(rows.filter(row => row.number).length + 1).padStart(2, '0'),
+			label: service.parentName ? `${service.parentName} / ${service.name}` : service.name,
+			value: Number(service.price || 0)
+		}));
+		const half = Math.ceil(rows.length / 2);
+		const copyTable = () => `<div class="indoor-tables">${[rows.slice(0, half), rows.slice(half)].map(items => `<table class="indoor-table"><tbody>${items.map(row => `<tr${row.subcharge ? ' class="indoor-subcharge"' : ''}><td>${row.number || ''}</td><td>${escapeHtml(row.label)}</td><td>${row.value ? money(row.value) : ''}</td></tr>`).join('')}</tbody></table>`).join('')}</div>`;
+		const copy = label => `<section class="indoor-copy">
+			<header class="indoor-head">${hospitalLogo('indoor-mark')}<div><h2>${escapeHtml(HOSPITAL_NAME)}</h2><span>Kabirhat, Noakhali · Reception: 01868-551839 · Office: 01762-913773</span></div><strong>INDOOR BILL<br><small>${label}</small></strong></header>
+			<div class="indoor-meta"><b>No. ${escapeHtml(record.slipNo || record.bookingId)}</b><svg data-barcode="${escapeHtml(record.bookingId)}"></svg></div>
+			<div class="indoor-patient"><div><span>Name</span><b>${escapeHtml(record.patientName)}</b></div><div><span>Reg No.</span><b>${escapeHtml(record.bookingId)}</b></div><div><span>Address / Contact</span><b>${escapeHtml(record.contact || '—')}</b></div><div><span>Cabin / Bed No.</span><b>${escapeHtml(cabinName(record.cabinId))}</b></div><div class="indoor-demographic"><span>Age</span><b>${escapeHtml(record.age || '—')}</b></div><div class="indoor-demographic"><span>Gender</span><b>${escapeHtml(record.gender || '—')}</b></div><div><span>Admission Date</span><b>${dateOnly(record.startAt)}</b></div><div><span>Release Date</span><b>${dateOnly(record.endAt)}</b></div></div>
+			${copyTable()}
+			<div class="indoor-totals"><div class="indoor-words"><b>Tk. (In Word):</b> ${escapeHtml(amountInWords(record.net))}</div><div class="indoor-sums"><div><span>Sub Total</span><b>${money(record.subtotal)}</b></div><div><span>Service Charge</span><b>${money(0)}</b></div><div><span>Vat</span><b>${money(0)}</b></div><div><span>Net Total</span><b>${money(record.net)}</b></div><div><span>Advance</span><b>${money(record.advance)}</b></div><div><span>Balance</span><b>${money(record.due)}</b></div></div></div>
+			<footer class="indoor-signatures"><span>Signature of Recipient</span><span>Checked by</span><span>Accountant</span></footer>
+			<footer class="print-credit"><span class="print-motto">বিশ্বমানের সর্বাধুনিক চিকিৎসা সেবা প্রদানের মাধ্যমে, রোগীকে সুস্থ করে পরিবারের মুখে হাসি ফুটানই আমাদের অঙ্গীকার।</span><span class="developer-credit">Developed By : <img class="developer-logo" src="../site_assets/unreal_studio_icon.svg" alt=""> - Unreal Studio ©</span></footer>
+		</section>`;
+		return `<article class="print-sheet print-sheet--indoor">${copy('Client Copy')}${copy('Office Copy')}</article>`;
 	}
 
 	function field(label, name, value = '', type = 'text', required = false) {
@@ -355,8 +818,13 @@
 	function byDateDesc(left, right) { const difference = new Date(right.createdAt || right.visitAt || right.startAt) - new Date(left.createdAt || left.visitAt || left.startAt); return state.filters.sort === 'oldest' ? -difference : difference; }
 	function searchRecord(item) {
 		const query = state.query.trim().toLowerCase();
-		const matchesQuery = !query || Object.values(item).some(value => typeof value === 'string' || typeof value === 'number' ? String(value).toLowerCase().includes(query) : Array.isArray(value) ? value.some(entry => Object.values(entry).some(part => String(part).toLowerCase().includes(query))) : false);
-		if (!matchesQuery) return false;
+		if (!query) return matchesRecordFilters(item);
+		if (!state.searchResults || state.searchResults.query !== query) state.searchResults = { query, items: getSearchIndex().matches(query) };
+		if (!state.searchResults.items.has(item)) return false;
+		return matchesRecordFilters(item);
+	}
+
+	function matchesRecordFilters(item) {
 		if (state.filters.status !== 'all' && item.status !== state.filters.status) return false;
 		const recordDate = new Date(item.createdAt || item.visitAt || item.startAt);
 		if (state.filters.date === 'today' && recordDate.toDateString() !== new Date().toDateString()) return false;
@@ -367,10 +835,71 @@
 		}
 		return true;
 	}
+
+	function getSearchIndex() {
+		if (state.searchIndex) return state.searchIndex;
+		const collections = Object.values(state.data).filter(Array.isArray);
+		const entries = [];
+		const collectValues = value => {
+			if (value === null || value === undefined) return [];
+			if (['string', 'number', 'boolean'].includes(typeof value)) return [String(value)];
+			if (Array.isArray(value)) return value.flatMap(collectValues);
+			if (typeof value === 'object') return Object.values(value).flatMap(collectValues);
+			return [];
+		};
+		for (const item of collections.flat()) {
+			if (!item || typeof item !== 'object') continue;
+			entries.push([item, collectValues(item).join(' ').toLowerCase()]);
+		}
+		state.searchIndex = window.JXBW.build(entries);
+		return state.searchIndex;
+	}
 	function doctorName(doctorId) { return state.data.doctors.find(item => item.id === doctorId)?.name || 'Doctor removed'; }
 	function cabinName(cabinId) { return state.data.cabins.find(item => item.id === cabinId)?.name || cabinId || 'Cabin removed'; }
 	function recordKind(record) { return state.data.labOrders.includes(record) ? 'labOrders' : state.data.appointments.includes(record) ? 'appointments' : 'bookings'; }
 	function sumExtras(extras) { return (extras || []).reduce((sum, item) => sum + Number(item.price || 0), 0); }
+	function indoorServiceExtra(service, child = null) {
+		return {
+			id: child?.id || service.id,
+			parentId: service.id,
+			...(child ? { childId: child.id, parentName: service.name } : {}),
+			name: child?.name || service.name,
+			price: moneyInput(child?.price ?? service.price)
+		};
+	}
+
+	function selectedIndoorServices(form) {
+		const selected = new Set(new FormData(form).getAll('serviceIds'));
+		const extras = [];
+		for (const service of state.data.indoorServices) {
+			if (selected.has(service.id)) extras.push(indoorServiceExtra(service));
+			for (const child of service.children || []) {
+				if (selected.has(`child::${service.id}::${child.id}`)) extras.push(indoorServiceExtra(service, child));
+			}
+		}
+		return extras;
+	}
+
+	function automaticIndoorServices(includeAdmission) {
+		return state.data.indoorServices
+			.filter(service => !service.children?.length)
+			.filter(service => {
+				const kind = indoorFeeKind(service.name);
+				return kind === 'cabin' || (includeAdmission && kind === 'admission');
+			})
+			.map(service => indoorServiceExtra(service));
+	}
+
+	function updateBookingEstimate(form) {
+		const output = form.querySelector('#booking-estimate');
+		if (!output) return;
+		const days = Math.max(1, Number(form.elements.durationDays.value) || 1);
+		const addServices = form.dataset.addServices === 'true';
+		const cabinCharge = addServices ? 0 : moneyInput(form.elements.price.value) * days;
+		const automaticFees = addServices ? 0 : automaticIndoorServices(!form.dataset.id).reduce((sum, item) => sum + item.price, 0);
+		const selectedServices = selectedIndoorServices(form).reduce((sum, item) => sum + item.price, 0);
+		output.textContent = money(cabinCharge + automaticFees + selectedServices);
+	}
 
 	function go(module, tab = 0) { location.hash = routeHref(module, tab); }
 
@@ -381,10 +910,52 @@
 		if (button.dataset.tab !== undefined) { go(state.route.module, Number(button.dataset.tab)); return; }
 		const action = button.dataset.action;
 		if (button.classList.contains('modal-backdrop') && event.target !== button) return;
+		if (action === 'toggle-password') {
+			const password = appRoot.querySelector('#password');
+			if (!password) return;
+			const visible = password.type === 'password';
+			password.type = visible ? 'text' : 'password';
+			button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+			button.setAttribute('aria-pressed', String(visible));
+			button.textContent = visible ? '◎' : '◉';
+			password.focus();
+			return;
+		}
 		if (action === 'logout') { state.user = null; state.modal = null; render(); return; }
+		if (action === 'focus-scanner') { const scanner = appRoot.querySelector('[data-scan-input]'); if (scanner) { scanner.value = ''; scanner.focus(); toast('Scan the document barcode.'); } }
 		if (action === 'minimize') window.hospital?.minimize();
 		if (action === 'maximize') window.hospital?.toggleMaximize();
 		if (action === 'close') window.hospital?.close();
+		if (action === 'see-referrers') { state.modal = { type: 'referrers', agentId: button.dataset.id }; render(); }
+		if (action === 'view-referrer') { state.modal = { type: 'profile', id: button.dataset.id }; render(); }
+		if (action === 'agent-dashboard') { state.modal = { type: 'referral-dashboard', scope: 'agent', id: button.dataset.id, dayOffset: 0, page: 0, query: '' }; render(); }
+		if (action === 'referrer-dashboard') { state.modal = { type: 'referral-dashboard', scope: 'referrer', id: button.dataset.id, dayOffset: 0, page: 0, query: '' }; render(); }
+		if (action === 'referral-day-prev') { state.modal.dayOffset = Number(state.modal.dayOffset || 0) - 1; state.modal.page = 0; render(); }
+		if (action === 'referral-day-next') { state.modal.dayOffset = Number(state.modal.dayOffset || 0) + 1; state.modal.page = 0; render(); }
+		if (action === 'referral-source') { state.modal.source = button.dataset.source; state.modal.page = 0; render(); }
+		if (action === 'referral-page-prev') { state.modal.page = Math.max(0, Number(state.modal.page || 0) - 1); render(); }
+		if (action === 'referral-page-next') { state.modal.page = Number(state.modal.page || 0) + 1; render(); }
+		if (action === 'analytics-page') {
+			const pageCount = Math.ceil(allRecords().filter(record => isInAnalyticsPeriod(record, state.analytics.period) && matchesAnalyticsSearch(record)).length / state.analytics.pageSize);
+			state.analytics.page = Math.min(Math.max(0, state.analytics.page + Number(button.dataset.step)), Math.max(0, pageCount - 1));
+			render();
+		}
+		if (action === 'analytics-doctor-page') {
+			const doctorCount = state.data.doctors.filter(doctor => !state.analytics.doctorSearch.trim() || `${doctor.name} ${doctor.specialty || ''}`.toLowerCase().includes(state.analytics.doctorSearch.trim().toLowerCase())).length;
+			const pageCount = Math.ceil(doctorCount / state.analytics.doctorPageSize);
+			state.analytics.doctorPage = Math.min(Math.max(0, state.analytics.doctorPage + Number(button.dataset.step)), Math.max(0, pageCount - 1));
+			render();
+		}
+		if (action === 'analytics-test-page') {
+			const pageCount = Math.ceil(state.analytics.testCount / state.analytics.testPageSize);
+			state.analytics.testPage = Math.min(Math.max(0, state.analytics.testPage + Number(button.dataset.step)), Math.max(0, pageCount - 1));
+			render();
+		}
+		if (action === 'add-service-child') {
+			appRoot.querySelector('#item-form .service-child-list')?.insertAdjacentHTML('beforeend', serviceChildEditor());
+		}
+		if (action === 'remove-service-child') button.closest('.service-child-row')?.remove();
+		if (action === 'focus-referral-scanner') { const scanner = appRoot.querySelector('[data-referral-scan]'); if (scanner) { scanner.value = ''; scanner.focus(); } }
 		if (action === 'check-updates') {
 			try { await window.hospital?.checkForUpdates(); }
 			catch (error) { toast(`Could not check for updates: ${error.message}`, true); }
@@ -402,8 +973,20 @@
 		if (action === 'book-doctor') { sessionStorage.setItem('hmss-doctor', button.dataset.doctor); go('appointment', button.dataset.pre ? 2 : 1); }
 		if (action === 'book-cabin') { state.modal = { type: 'booking', cabinId: button.dataset.cabin }; render(); }
 		if (action === 'renew-booking') { state.modal = { type: 'renew', id: button.dataset.id }; render(); }
+		if (action === 'add-cabin-service') {
+			const booking = state.data.bookings.find(item => item.id === button.dataset.id);
+			if (booking) { state.modal = { type: 'booking', cabinId: booking.cabinId, booking, addServices: true }; render(); }
+		}
 		if (action === 'view-record') { state.modal = { type: 'record', kind: button.dataset.kind, id: button.dataset.id }; render(); }
-		if (action === 'print-record') { state.modal = { type: 'print', kind: button.dataset.kind, id: button.dataset.id }; render(); setTimeout(() => window.print(), 100); }
+		if (action === 'patient-history') { state.modal = { type: 'patient-history', key: button.dataset.key }; render(); }
+		if (action === 'print-record') { state.modal = { type: 'print', kind: button.dataset.kind, id: button.dataset.id }; render(); }
+		if (action === 'print-now') window.print();
+		if (action === 'save-pdf') {
+			try {
+				const saved = await window.hospital?.savePdf(button.dataset.pageSize);
+				if (saved) toast(`PDF saved to Downloads: ${saved.split(/[\\/]/).at(-1)}`);
+			} catch (error) { toast(`Could not save PDF: ${error.message}`, true); }
+		}
 		if (action === 'print-summary') { state.modal = { type: 'summary' }; render(); }
 		if (action === 'print-summary-now') { setTimeout(() => window.print(), 80); }
 		if (action === 'add-item') { state.modal = { type: 'item', kind: button.dataset.kind }; render(); }
@@ -427,13 +1010,86 @@
 			if (booking) { booking.status = 'Completed'; booking.releasedAt = nowISO(); await persist('Cabin released.'); render(); }
 		}
 		if (action === 'choose-image') {
-			const image = await window.hospital?.chooseImage();
-			const input = document.querySelector('#item-form [name="photo"]');
-			if (image && input) input.value = image;
+			const form = document.querySelector('#item-form');
+			try {
+				const image = await window.hospital?.chooseImage(form?.dataset.kind);
+				const input = form?.querySelector('[name="photo"]');
+				if (image && input) { input.value = image; const preview = form.querySelector('.profile-preview'); if (preview) preview.src = image; }
+			} catch (error) { toast(`Could not store image: ${error.message}`, true); }
 		}
 	});
 
+	appRoot.addEventListener('dragover', event => {
+		if (event.target.closest('[data-profile-drop]')) event.preventDefault();
+	});
+	appRoot.addEventListener('drop', async event => {
+		const dropzone = event.target.closest('[data-profile-drop]');
+		if (!dropzone) return;
+		event.preventDefault();
+		const file = event.dataTransfer.files[0];
+		const category = dropzone.closest('#item-form')?.dataset.kind;
+		let sourcePath;
+		try { sourcePath = file && window.hospital?.getImagePath(file); }
+		catch { return toast('Drop a local image file.', true); }
+		if (!sourcePath) return toast('Drop a local image file.', true);
+		try {
+			const image = await window.hospital?.storeImage(sourcePath, category);
+			if (image) { document.querySelector('#item-form [name="photo"]').value = image; dropzone.querySelector('img').src = image; }
+		} catch (error) { toast(`Could not store image: ${error.message}`, true); }
+	});
+
 	appRoot.addEventListener('input', event => {
+		if (event.target.matches('[data-analytics-test-search]')) {
+			state.analytics.testSearch = event.target.value;
+			state.analytics.testPage = 0;
+			const cursor = event.target.selectionStart;
+			render();
+			const replacement = appRoot.querySelector('[data-analytics-test-search]');
+			replacement?.focus(); replacement?.setSelectionRange(cursor, cursor);
+			return;
+		}
+		if (event.target.matches('[data-analytics-doctor-search]')) {
+			state.analytics.doctorSearch = event.target.value;
+			state.analytics.doctorPage = 0;
+			const cursor = event.target.selectionStart;
+			render();
+			const replacement = appRoot.querySelector('[data-analytics-doctor-search]');
+			replacement?.focus(); replacement?.setSelectionRange(cursor, cursor);
+			return;
+		}
+		if (event.target.matches('[data-service-search]')) {
+			const query = event.target.value.trim().toLowerCase();
+			event.target.form.querySelectorAll('.service-option-group').forEach(group => {
+				const title = group.querySelector('.service-group-title')?.textContent.toLowerCase() || '';
+				let visible = false;
+				group.querySelectorAll('.service-option').forEach(option => {
+					const matches = title.includes(query) || option.textContent.toLowerCase().includes(query);
+					option.hidden = !matches;
+					visible ||= matches;
+				});
+				group.hidden = !visible;
+			});
+			return;
+		}
+		if (event.target.matches('[data-referral-search]')) {
+			state.modal.query = event.target.value;
+			state.modal.page = 0;
+			const position = event.target.selectionStart;
+			render();
+			const replacement = appRoot.querySelector('[data-referral-search]');
+			replacement?.focus(); replacement?.setSelectionRange(position, position);
+			return;
+		}
+		if (event.target.form?.id === 'booking-form' && ['durationDays', 'startAt', 'endAt'].includes(event.target.name)) {
+			const form = event.target.form;
+			const start = new Date(form.elements.startAt.value);
+			if (Number.isFinite(start.getTime())) {
+				if (event.target.name === 'endAt') form.elements.durationDays.value = Math.max(1, Math.ceil((new Date(form.elements.endAt.value) - start) / 86400000));
+				else form.elements.endAt.value = toDateInput(new Date(start.getTime() + Math.max(1, Number(form.elements.durationDays.value) || 1) * 86400000).toISOString());
+			}
+		}
+		if (event.target.form?.id === 'booking-form' && ['price', 'discount', 'durationDays'].includes(event.target.name)) updateBookingEstimate(event.target.form);
+		if (event.target.matches('#booking-form [name="serviceIds"]')) updateBookingEstimate(event.target.form);
 		if (event.target.matches('[data-search], [data-global-search]')) {
 			state.query = event.target.value;
 			const cursor = event.target.selectionStart;
@@ -444,10 +1100,34 @@
 		}
 		if (event.target.form?.id === 'lab-form' && ['testIds', 'discount'].includes(event.target.name)) updateBillPreview();
 		if (event.target.form?.id === 'appointment-form' && ['contact', 'patientName'].includes(event.target.name)) updatePatientHistory(event.target.form.elements.contact.value, event.target.form.elements.patientName.value);
-		if (event.target.form?.id === 'appointment-form' && event.target.name === 'doctorId') updateVisitPrice();
+		if (event.target.form?.id === 'appointment-form' && event.target.name === 'doctorId') { updateVisitPrice(); fillDoctorSchedule(); }
 	});
 
 	appRoot.addEventListener('change', event => {
+		if (event.target.matches('[data-analytics-period]')) {
+			state.analytics.period = event.target.value;
+			state.analytics.page = 0;
+			state.analytics.doctorPage = 0;
+			state.analytics.testPage = 0;
+			if (event.target.value !== 'custom') { state.analytics.from = ''; state.analytics.to = ''; }
+			render();
+		}
+		if (event.target.matches('[data-analytics-date]')) {
+			state.analytics[event.target.dataset.analyticsDate] = event.target.value;
+			state.analytics.page = 0;
+			state.analytics.testPage = 0;
+			render();
+		}
+		if (event.target.matches('[data-analytics-page-size]')) {
+			state.analytics.pageSize = Number(event.target.value);
+			state.analytics.page = 0;
+			render();
+		}
+		if (event.target.form?.id === 'lab-form' && event.target.name === 'referrerId') {
+			const referrer = state.data.referrers.find(item => item.id === event.target.value);
+			if (referrer) event.target.form.elements.agentId.value = referrer.agentId || '';
+		}
+		if (event.target.form?.id === 'lab-form' && event.target.name === 'agentId' && event.target.value) event.target.form.elements.referrerId.value = '';
 		if (event.target.matches('[data-sort]')) {
 			state.filters.sort = event.target.value;
 			render();
@@ -466,6 +1146,22 @@
 			render();
 		}
 		if (event.target.form?.id === 'lab-form') updateBillPreview();
+		if (event.target.form?.id === 'booking-form' && event.target.matches('[name="serviceIds"]')) updateBookingEstimate(event.target.form);
+	});
+
+	appRoot.addEventListener('keydown', event => {
+		if (event.target.matches('[data-referral-scan]') && event.key === 'Enter') {
+			event.preventDefault();
+			state.modal.query = event.target.value.trim();
+			state.modal.page = 0;
+			render();
+			return;
+		}
+		if (!event.target.matches('[data-scan-input]') || event.key !== 'Enter') return;
+		event.preventDefault();
+		state.query = event.target.value.trim();
+		render();
+		document.querySelector('[data-search]')?.focus();
 	});
 
 	appRoot.addEventListener('submit', async event => {
@@ -516,6 +1212,15 @@
 		form.elements.price.value = returning ? doctor.oldPrice : doctor.newPrice;
 	}
 
+	function fillDoctorSchedule() {
+		const form = document.getElementById('appointment-form');
+		const doctor = form && state.data.doctors.find(item => item.id === form.elements.doctorId.value);
+		const range = doctor && chamberRange(doctor);
+		if (!range) return;
+		form.elements.fromTime.value = `${String(Math.floor(range[0] / 60) % 24).padStart(2, '0')}:${String(range[0] % 60).padStart(2, '0')}`;
+		form.elements.toTime.value = `${String(Math.floor(range[1] / 60) % 24).padStart(2, '0')}:${String(range[1] % 60).padStart(2, '0')}`;
+	}
+
 	function matchesPatient(record, contact, patientName) {
 		const phoneMatches = contact && contact.trim().length >= 5 && record.contact === contact.trim();
 		const nameMatches = patientName && patientName.trim().length >= 3 && record.patientName.toLowerCase() === patientName.trim().toLowerCase();
@@ -528,12 +1233,36 @@
 		const existing = records.find(item => item.id === form.dataset.id);
 		const item = { ...values };
 		for (const key of Object.keys(item)) if (['price', 'newPrice', 'oldPrice'].includes(key)) item[key] = moneyInput(item[key]);
+		if (type === 'indoorServices') {
+			const formData = new FormData(form);
+			const names = formData.getAll('childName').map(value => String(value).trim());
+			const prices = formData.getAll('childPrice');
+			const childIds = formData.getAll('childId');
+			const children = [];
+			for (let index = 0; index < names.length; index += 1) {
+				if (!names[index] && !String(prices[index] || '').trim()) continue;
+				if (!names[index] || !String(prices[index] || '').trim()) return toast('Enter both a child item name and price.', true);
+				children.push({ id: childIds[index] || id('SVC'), name: names[index], price: moneyInput(prices[index]) });
+			}
+			if (!children.length && !String(formData.get('price') || '').trim()) return toast('Enter a parent price or add at least one child item.', true);
+			const childNames = children.map(child => child.name.toLowerCase());
+			if (new Set(childNames).size !== childNames.length) return toast('Child item names must be unique within a parent item.', true);
+			const feeKind = indoorFeeKind(item.name);
+			if (feeKind && records.some(entry => entry.id !== existing?.id && indoorFeeKind(entry.name) === feeKind)) {
+				return toast('An automatic admission or cabin charge with that name already exists.', true);
+			}
+			item.children = children;
+			delete item.childName;
+			delete item.childPrice;
+			delete item.childId;
+		}
 		if (type === 'tests') {
 			if (records.some(entry => entry.code.toLowerCase() === item.code.trim().toLowerCase() && entry.id !== existing?.id)) return toast('That test code is already in use.', true);
 			item.code = item.code.trim().toUpperCase();
 		}
 		if (type === 'doctors') item.id = existing?.id || id('D');
 		else if (type === 'cabins') item.id = existing?.id || id('C');
+		else if (type === 'indoorServices') item.id = existing?.id || id('SVC');
 		else if (type === 'agents') item.id = existing?.id || id('A');
 		else if (type === 'referrers') item.id = existing?.id || id('R');
 		else item.id = existing?.id || id('T');
@@ -554,8 +1283,13 @@
 		const doctorIds = [...form.elements.doctorIds.selectedOptions].map(option => option.value);
 		const doctors = doctorIds.map(doctorId => state.data.doctors.find(doctor => doctor.id === doctorId)).filter(Boolean).map(doctor => ({ id: doctor.id, name: doctor.name, specialty: doctor.specialty }));
 		const referrer = state.data.referrers.find(item => item.id === formData.get('referrerId'));
+		const directAgent = state.data.agents.find(item => item.id === formData.get('agentId'));
+		const parentAgent = referrer && state.data.agents.find(item => item.id === referrer.agentId);
 		const billId = uniqueBillId();
 		const record = { id: id('LAB'), billId, patientName: String(formData.get('patientName')).trim(), age: Number(formData.get('age')), gender: formData.get('gender'), contact: String(formData.get('contact')).trim(), doctors, doctorIds, referrerId: referrer?.id || '', referrerName: referrer?.name || '', tests: selectedTests, testNames: selectedTests.map(test => test.name).join(', '), subtotal, discount, net, advance, due: net - advance, fullPaid: advance >= net, createdAt: nowISO(), deliveryAt: new Date(formData.get('deliveryAt')).toISOString(), remarks: formData.get('remarks') || '', note: formData.get('note') || '', description: formData.get('description') || '', status: 'Pending' };
+		record.agentId = directAgent?.id || parentAgent?.id || '';
+		record.agentName = directAgent?.name || parentAgent?.name || '';
+		record.referralType = referrer ? 'special-referrer' : directAgent ? 'marketing-agent' : 'none';
 		state.data.labOrders.unshift(record); await persist('Test bill saved.'); openRecord('labOrders', record.id, true);
 	}
 
@@ -581,25 +1315,35 @@
 		const existing = state.data.bookings.find(item => item.id === form.dataset.id);
 		const cabinId = form.dataset.cabin;
 		const cabin = state.data.cabins.find(item => item.id === cabinId);
-		const days = Math.max(1, Math.ceil((new Date(values.endAt) - new Date(values.startAt)) / 86400000));
+		const days = Math.max(1, Number(values.durationDays) || Math.ceil((new Date(values.endAt) - new Date(values.startAt)) / 86400000));
 		if (new Date(values.endAt) <= new Date(values.startAt)) return toast('Release time must be after admission.', true);
-		const extras = parseExtras(values.extras);
+		const selectedExtras = selectedIndoorServices(form);
+		const addingServices = form.dataset.addServices === 'true';
+		const extras = addingServices
+			? selectedExtras
+			: [...automaticIndoorServices(!existing), ...selectedExtras];
 		const dailyRate = moneyInput(values.price);
-		const subtotal = (dailyRate + sumExtras(extras)) * days;
+		const subtotal = dailyRate * days + sumExtras(extras);
 		const discount = Math.min(subtotal, moneyInput(values.discount));
 		const net = subtotal - discount;
 		const advance = Math.min(net, moneyInput(values.advance));
+		if (addingServices && existing) {
+			if (!extras.length) return toast('Select at least one service item.', true);
+			existing.extras ||= [];
+			existing.extras.push(...extras);
+			existing.subtotal += sumExtras(extras);
+			existing.net += sumExtras(extras);
+			existing.due = Math.max(0, existing.net - existing.advance);
+			await persist('Cabin service items added.'); openRecord('bookings', existing.id, true); return;
+		}
 		if (existing) {
 			existing.endAt = new Date(values.endAt).toISOString(); existing.days += days; existing.subtotal += subtotal; existing.net += net; existing.due += net; existing.status = 'Occupied';
 			existing.advance += advance; existing.due = Math.max(0, existing.net - existing.advance); existing.extras.push(...extras); existing.notes = values.notes || existing.notes;
 			await persist('Cabin stay renewed.'); openRecord('bookings', existing.id, true); return;
 		}
-		const record = { id: id('CAB'), bookingId: id('BOOK'), cabinId: cabin?.id || cabinId, patientName: String(values.patientName).trim(), contact: String(values.contact).trim(), age: Number(values.age), gender: values.gender, startAt: new Date(values.startAt).toISOString(), endAt: new Date(values.endAt).toISOString(), days, dailyRate, extras, extrasText: values.extras, subtotal, discount, net, advance, due: net - advance, notes: values.notes || '', status: 'Occupied', createdAt: nowISO() };
+		const slipNo = Math.max(0, ...state.data.bookings.map(item => Number(item.slipNo) || 0)) + 1;
+		const record = { id: id('CAB'), bookingId: id('BOOK'), slipNo, cabinId: cabin?.id || cabinId, patientName: String(values.patientName).trim(), contact: String(values.contact).trim(), age: Number(values.age), gender: values.gender, startAt: new Date(values.startAt).toISOString(), endAt: new Date(values.endAt).toISOString(), days, dailyRate, extras, subtotal, discount, net, advance, due: net - advance, notes: values.notes || '', status: 'Occupied', createdAt: nowISO() };
 		state.data.bookings.unshift(record); await persist('Cabin admission saved.'); openRecord('bookings', record.id, true);
-	}
-
-	function parseExtras(text) {
-		return String(text || '').split(',').map(part => { const [name, price] = part.split(':'); return { name: name.trim(), price: moneyInput(price) }; }).filter(item => item.name);
 	}
 
 	function amountInWords(amount) {
@@ -637,6 +1381,7 @@
 		if (event.key === 'Escape' && state.modal) { state.modal = null; render(); }
 		if (event.ctrlKey && event.key.toLowerCase() === 'k') { event.preventDefault(); document.querySelector('[data-search]')?.focus(); }
 		if (event.key === 'F2' && state.user) { event.preventDefault(); go('counter', 1); }
+		if (event.ctrlKey && event.key.toLowerCase() === 'n' && state.user && state.route.module === 'counter') { event.preventDefault(); go('counter', 1); }
 	});
 	document.addEventListener('contextmenu', event => event.preventDefault());
 	window.addEventListener('hashchange', routeFromHash);
@@ -647,11 +1392,14 @@
 			else state.updater = { appVersion: 'Browser preview', supported: false, status: 'unsupported', percent: 0, logs: [] };
 			if (window.hospital?.load) state.data = await window.hospital.load();
 			else state.data = JSON.parse(localStorage.getItem('hmss-data') || 'null') || fallbackData();
+			state.data.indoorServices ||= [];
+			logTerminal('info', `Workspace opened with ${allRecords().length} patient records.`);
 			const username = sessionStorage.getItem('hmss-session');
 			state.user = state.data.users.find(item => item.username === username) || null;
 			expireCabinStays();
 			routeFromHash();
 		} catch (error) {
+			logTerminal('error', error.message);
 			appRoot.innerHTML = `${windowBar()}<div class="empty"><strong>Workspace could not open</strong>${escapeHtml(error.message)}</div>`;
 		}
 	}

@@ -2,3 +2,6 @@ node_modules/
 release/
 npm-debug.log*
 *.tmp
+/assets/doctors/
+/assets/marketing_agent/
+/assets/Special_Referrer/

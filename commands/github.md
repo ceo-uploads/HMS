@@ -23,3 +23,30 @@
 
 ## Force overwrite the remote repository
     git push -u origin main --force
+
+
+## Addin Version Control System Commands
+    $secret = Read-Host "GitHub token" -AsSecureString
+    $env:GH_TOKEN = [System.Net.NetworkCredential]::new("", $secret).Password
+    try {
+        npm run publish
+    } finally {
+        Remove-Item Env:GH_TOKEN -ErrorAction SilentlyContinue
+        Remove-Variable secret -ErrorAction SilentlyContinue
+    }
+
+
+## VCS tags
+    git push origin main --follow-tags
+    npm run publish
+
+## VCS status and push version
+    git status
+    npm version patch
+    git push origin main --follow-tags
+
+## Publish Fix Command
+    git add main.cjs package.json package-lock.json scripts/ensure-update-metadata.cjs
+    git commit -m "Fix GitHub updater metadata"
+    git tag v1.0.2
+    git push origin main --follow-tags  
