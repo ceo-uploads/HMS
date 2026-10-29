@@ -1,9 +1,9 @@
 {
   "users": [
     {
-      "username": "admin",
-      "password": "admin123",
-      "name": "Administrator"
+      "username": "kph2026",
+      "password": "kph@2026",
+      "name": "Recipient"
     }
   ],
   "tests": [
@@ -192,7 +192,7 @@
       "contact": "01700000004"
     }
   ],
-  
+
   "indoorServices": [],
   "labOrders": [
     {
