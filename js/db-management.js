@@ -6,7 +6,8 @@ const path = require('node:path');
 const DATABASE_GROUPS = [
 	['clinic-test-db.json', ['users', 'tests', 'agents', 'referrers', 'indoorServices', 'labOrders']],
 	['doctor-appointment-db.json', ['doctors', 'appointments']],
-	['cabin-bookings-db.json', ['cabins', 'bookings']]
+	['cabin-bookings-db.json', ['cabins', 'bookings']],
+	['others.json', ['floors', 'rooms', 'roomBills', 'roomClaims']]
 ];
 
 async function readJsonFile(file) {

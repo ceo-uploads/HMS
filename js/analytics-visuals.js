@@ -1,7 +1,7 @@
 'use strict';
 
 (function (root) {
-	function mountRevenueChart(container, months) {
+	function mountRevenueChart(container, months, options = {}) {
 		if (!root.THREE) {
 			container.textContent = 'The 3D analytics library could not be loaded.';
 			return () => {};
@@ -20,7 +20,8 @@
 		const scene = new THREE.Scene();
 		scene.background = new THREE.Color('#ffffff');
 		const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-		camera.position.set(0, 8.5, 17);
+		const zoom = Math.max(0.75, Math.min(1.5, Number(options.zoom) || 1));
+		camera.position.set(0, 8.5, 17 / zoom);
 		camera.lookAt(0, 2, 0);
 		renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, 1.5));
 		renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -43,19 +44,26 @@
 		grid.position.set(0, 0.02, 0);
 		chartGroup.add(grid);
 
-		const maxValue = Math.max(1, ...months.flatMap(month => [month.billed, month.received]));
+		const mode = options.mode || 'revenue';
+		const chartSeries = mode === 'rooms'
+			? [{ key: 'roomCollected', label: 'Room collected', color: 0x087b91 }, { key: 'roomDue', label: 'Room due', color: 0xe7a447 }]
+			: mode === 'activity'
+				? [{ key: 'records', label: 'All records', color: 0x087b91 }, { key: 'appointments', label: 'Appointments', color: 0x68b79c }]
+				: [{ key: 'billed', label: 'Billed', color: 0x087b91 }, { key: 'received', label: 'Collected', color: 0x68b79c }];
+		const reducedMotion = root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const animateMotion = options.motion !== false && !reducedMotion;
+		const rotate = options.rotate !== false;
+		const maxValue = Math.max(1, ...months.flatMap(month => chartSeries.map(series => Number(month[series.key]) || 0)));
 		const scale = 5.5 / maxValue;
 		const barGeometry = new THREE.BoxGeometry(0.32, 1, 0.42);
 		const bars = [];
 
 		months.forEach((month, index) => {
 			const x = (index - (months.length - 1) / 2) * 1.32;
-			[
-				{ value: month.billed, color: 0x087b91, offset: -0.2 },
-				{ value: month.received, color: 0x68b79c, offset: 0.2 }
-			].forEach(series => {
-				if (series.value <= 0) return;
-				const height = Math.max(0.045, series.value * scale);
+			chartSeries.forEach((series, seriesIndex) => {
+				const value = Number(month[series.key]) || 0;
+				if (value <= 0) return;
+				const height = Math.max(0.045, value * scale);
 				const material = new THREE.MeshStandardMaterial({
 					color: series.color,
 					metalness: 0.18,
@@ -64,9 +72,9 @@
 					emissiveIntensity: 0.055
 				});
 				const bar = new THREE.Mesh(barGeometry, material);
-				bar.position.set(x + series.offset, height / 2, 0);
-				bar.scale.y = 0.001;
-				bar.userData = { targetHeight: height, month: month.label, value: series.value, series: series.offset < 0 ? 'Billed' : 'Collected' };
+				bar.position.set(x + (seriesIndex === 0 ? -0.2 : 0.2), height / 2, 0);
+				bar.scale.y = animateMotion ? 0.001 : height;
+				bar.userData = { targetHeight: height, month: month.label, value, series: series.label };
 				chartGroup.add(bar);
 				bars.push(bar);
 			});
@@ -97,7 +105,6 @@
 		let frame = 0;
 		let animationId = 0;
 		let lastTime = 0;
-		const reducedMotion = root.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const resizeObserver = new ResizeObserver(([entry]) => {
 			const width = Math.max(1, Math.floor(entry.contentRect.width));
 			const height = Math.max(1, Math.floor(entry.contentRect.height));
@@ -114,14 +121,15 @@
 			lastTime = time;
 			frame += elapsed;
 			bars.forEach(bar => {
-				const progress = reducedMotion ? 1 : Math.min(1, frame / 0.9);
+				const progress = !animateMotion ? 1 : Math.min(1, frame / 0.9);
 				bar.scale.y = Math.max(0.001, progress) * bar.userData.targetHeight;
 				bar.position.y = bar.scale.y / 2;
 			});
-			if (!reducedMotion) chartGroup.rotation.y = Math.sin(time * 0.00012) * 0.035;
+				if (animateMotion && rotate) chartGroup.rotation.y = Math.sin(time * 0.00012) * 0.035;
 			renderer.render(scene, camera);
 		}
-		animationId = requestAnimationFrame(animate);
+			if (animateMotion) animationId = requestAnimationFrame(animate);
+			else renderer.render(scene, camera);
 
 		return () => {
 			cancelAnimationFrame(animationId);

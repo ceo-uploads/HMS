@@ -51,7 +51,15 @@ The installer updates application files only. The JSON database and copied asset
 
 ## Local data
 
-When running with `npm start`, records are stored in the three JSON files under `Database/`: `clinic-test-db.json` (users, tests, referrals and diagnostic bills), `doctor-appointment-db.json` (doctors and appointments), and `cabin-bookings-db.json` (cabins and indoor bookings). The browser-only preview fallback uses browser storage; the Electron app uses the JSON files. The installed application stores the same three files in `%APPDATA%/hmss-desktop/Database/` so updates do not overwrite or require writing to the installation directory. Existing `%APPDATA%/hmss-desktop/hospital-data.json` records are migrated to the three files on first launch after this change. Profile photos are copied locally into `assets/doctors/`, `assets/marketing_agent/` or `assets/Special_Referrer/` while running from source, and into the equivalent per-user assets folders in the installed application. No remote services are required.
+When running with `npm start`, records are stored in four JSON files under `Database/`: `clinic-test-db.json` (users, tests, referrals and diagnostic bills), `doctor-appointment-db.json` (doctors and appointments), `cabin-bookings-db.json` (cabins and indoor bookings), and `others.json` (room floors, rooms, monthly bills and room payments). The browser-only preview fallback uses browser storage; the Electron app uses JSON files as its source of truth. The installed application stores these files in `%APPDATA%/hmss-desktop/Database/` so updates do not overwrite or require writing to the installation directory. Existing `%APPDATA%/hmss-desktop/hospital-data.json` records are migrated on first launch. Profile photos are copied locally into `assets/doctors/`, `assets/marketing_agent/` or `assets/Special_Referrer/` while running from source, and into equivalent per-user asset folders in the installed application.
+
+## Firebase sync and monitoring
+
+The desktop app never reads Firebase data. New diagnostic bills, cabin admissions, room payments, appointments, doctors, agents and special referrers are appended to their assigned Realtime Database project. Failed uploads remain in `%APPDATA%/hmss-desktop/firebase-sync-queue.json` and are retried while the app runs; that file contains queued record data and should be treated as confidential. Local JSON remains authoritative.
+
+Before enabling sync, enable **Anonymous** and **Google** sign-in in all four Firebase Authentication projects and apply [firebase/database.rules.json](./firebase/database.rules.json) to each Realtime Database. The rules permit only validated, append-only anonymous writes; deny anonymous reads; and allow verified Google reads only for `privatehospitalkabirhat@gmail.com`. Add the monitoring website’s hosting domain to the authorized domains for each project. Deploy `website_html/` at a path where the root-level `Firebase_sdks/` folder is also served. The site signs the authorized Google account into each Firebase project before opening that project's read listeners. Firebase Console settings and deployed rules are external configuration and must be applied and verified separately.
+
+Project routing: A stores diagnostic bills; B stores cabin admissions; C stores room payment receipts; D stores appointments and new doctor/referral directory entries. The Dev Tunnel reports the local upload-queue state. Google Analytics reporting is not connected: it would require additional Analytics Reporting API authorization and would conflict with the desktop’s write-only Firebase rule.
 
 The starter catalog is written on first launch. The built-in sign-in is a basic local gate, not a security boundary: JSON data and credentials are not encrypted. Use this build with demo data only until proper account controls, encrypted storage and backups are implemented.
 
@@ -61,7 +69,8 @@ The starter catalog is written on first launch. The built-in sign-in is a basic 
 - Doctor directory, live and reserved visits, patient history and visit slips
 - Cabin availability, admission payments, renewals, release and booking history
 - Management of tests, doctors, cabins, marketing agents and special referrers
-- Searchable activity archive with date/status filters, doctor referral metrics, activity trends, payment summaries, test rankings, cabin utilization and paginated analytics
+- Searchable activity archive with date/status filters, doctor referral metrics, activity trends, payment summaries, test rankings, cabin utilization, room billing analytics and paginated reports
+- Room and floor management, monthly due tracking, partial/full payment receipts, local billing history and A5 printable slips
 - Printable indoor bills with client and office copies on one A4 sheet; test cash memos use A5 paper, with black high-contrast text and the Unreal Studio icon credit
 
 Right-click menus are disabled. The application uses custom in-app dialogs and stores its operational data locally so the persistence layer can later be replaced or extended for Firebase Realtime Database.

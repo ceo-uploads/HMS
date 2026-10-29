@@ -75,7 +75,8 @@
 			repeatPatients: 0,
 			averageBill: 0,
 			collectionRate: 0,
-			workflows: { diagnostics: 0, appointments: 0, admissions: 0 },
+			workflows: { diagnostics: 0, appointments: 0, admissions: 0, roomPayments: 0 },
+			roomPayments: 0,
 			statuses: {},
 			ageBands: { '0–17': 0, '18–35': 0, '36–59': 0, '60+': 0, 'Not recorded': 0 },
 			genders: {},
@@ -87,6 +88,7 @@
 			const net = Math.max(0, Number(record.net ?? record.price ?? record.subtotal ?? 0) || 0);
 			const received = Math.max(0, Number(record.advance || 0) || 0);
 			const due = Math.max(0, Number(record.due ?? net - received) || 0);
+			const isRoomPayment = record.kind === 'roomClaims';
 			const patient = String(record.patientKey || record.contact || record.patientName || '').trim().toLowerCase();
 			summary.net += net;
 			summary.received += received;
@@ -94,7 +96,7 @@
 			summary.paidRecords += due === 0 ? 1 : 0;
 			summary.outstandingRecords += due > 0 ? 1 : 0;
 			summary.statuses[record.status || 'Unspecified'] = (summary.statuses[record.status || 'Unspecified'] || 0) + 1;
-			if (patient) {
+			if (patient && !isRoomPayment) {
 				summary.patients.add(patient);
 				patientVisits.set(patient, (patientVisits.get(patient) || 0) + 1);
 			}
@@ -102,15 +104,21 @@
 			if (record.kind === 'labOrders' || Array.isArray(record.tests) || record.testNames) summary.workflows.diagnostics += 1;
 			else if (record.kind === 'appointments' || record.doctorId) summary.workflows.appointments += 1;
 			else if (record.kind === 'bookings' || record.cabinId) summary.workflows.admissions += 1;
+			else if (record.kind === 'roomClaims') {
+				summary.workflows.roomPayments += 1;
+				summary.roomPayments += net;
+			}
 
-			const age = Number.parseInt(record.age, 10);
-			const ageBand = !Number.isFinite(age) || age < 0 ? 'Not recorded'
-				: age < 18 ? '0–17'
-					: age < 36 ? '18–35'
-						: age < 60 ? '36–59' : '60+';
-			summary.ageBands[ageBand] += 1;
-			const gender = String(record.gender || 'Not recorded').trim() || 'Not recorded';
-			summary.genders[gender] = (summary.genders[gender] || 0) + 1;
+			if (!isRoomPayment) {
+				const age = Number.parseInt(record.age, 10);
+				const ageBand = !Number.isFinite(age) || age < 0 ? 'Not recorded'
+					: age < 18 ? '0–17'
+						: age < 36 ? '18–35'
+							: age < 60 ? '36–59' : '60+';
+				summary.ageBands[ageBand] += 1;
+				const gender = String(record.gender || 'Not recorded').trim() || 'Not recorded';
+				summary.genders[gender] = (summary.genders[gender] || 0) + 1;
+			}
 		}
 
 		summary.averageBill = records.length ? summary.net / records.length : 0;

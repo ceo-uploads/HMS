@@ -1,0 +1,71 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "hmss": {
+      ".read": false,
+      ".write": false,
+      "v1": {
+        ".read": false,
+        ".write": false,
+        "clinicalTests": {
+          "labOrders": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'billId', 'patientName', 'createdAt']) && newData.child('id').isString() && newData.child('billId').isString() && newData.child('patientName').isString() && newData.child('createdAt').isString()"
+            }
+          }
+        },
+        "cabinBookings": {
+          "bookings": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'bookingId', 'patientName', 'cabinId', 'createdAt']) && newData.child('id').isString() && newData.child('bookingId').isString() && newData.child('patientName').isString() && newData.child('createdAt').isString()"
+            }
+          }
+        },
+        "roomBills": {
+          "claims": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'claimId', 'roomId', 'amount', 'billingMonth', 'createdAt']) && newData.child('id').isString() && newData.child('claimId').isString() && newData.child('roomId').isString() && newData.child('amount').isNumber() && newData.child('billingMonth').isString() && newData.child('createdAt').isString()"
+            }
+          }
+        },
+        "otherRecords": {
+          "appointments": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'recordId', 'patientName', 'createdAt']) && newData.child('id').isString() && newData.child('recordId').isString() && newData.child('patientName').isString() && newData.child('createdAt').isString()"
+            }
+          },
+          "doctors": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').isString() && newData.child('name').isString()"
+            }
+          },
+          "referrals": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').isString() && newData.child('name').isString()"
+            }
+          },
+          "agents": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && auth.token.email_verified === true && auth.token.email === 'privatehospitalkabirhat@gmail.com'",
+            "$record": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').isString() && newData.child('name').isString()"
+            }
+          }
+        }
+      }
+    }
+  }
+}

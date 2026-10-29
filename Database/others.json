@@ -1,0 +1,55 @@
+{
+  "floors": [
+    {
+      "id": "FLOOR-MVRZLX62-O9P",
+      "name": "5th",
+      "label": "5th floor"
+    },
+    {
+      "id": "FLOOR-MVRZIHY5-DS0",
+      "name": "4th",
+      "label": "4th floor"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "ROOM-MVRZLI8O-6QP",
+      "floorId": "FLOOR-MVRZIHY5-DS0",
+      "name": "401",
+      "monthlyAmount": 3000
+    }
+  ],
+  "roomBills": [
+    {
+      "id": "RB-ROOM-MVRZLI8O-6QP-2026-10",
+      "roomId": "ROOM-MVRZLI8O-6QP",
+      "billingMonth": "2026-10",
+      "monthlyAmount": 3000,
+      "received": 3000,
+      "status": "Cleared",
+      "createdAt": "2026-10-28T10:43:59.256Z"
+    }
+  ],
+  "roomClaims": [
+    {
+      "id": "RCPT-MVRZM6WF-DA6",
+      "claimId": "RCPT-MVRZM6WF-DA6",
+      "roomId": "ROOM-MVRZLI8O-6QP",
+      "roomName": "401",
+      "floorId": "FLOOR-MVRZIHY5-DS0",
+      "floorName": "4th",
+      "billingMonth": "2026-10",
+      "kind": "roomClaims",
+      "kindLabel": "Room payment",
+      "patientName": "401 · 4th",
+      "amount": 3000,
+      "net": 3000,
+      "advance": 3000,
+      "due": 0,
+      "status": "Received",
+      "paymentMethod": "Cash",
+      "notes": "",
+      "createdAt": "2026-10-28T10:44:31.216Z"
+    }
+  ]
+}

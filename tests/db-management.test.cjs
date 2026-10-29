@@ -10,7 +10,8 @@ const { loadDatabase, saveDatabase } = require('../js/db-management');
 const filenames = [
 	'clinic-test-db.json',
 	'doctor-appointment-db.json',
-	'cabin-bookings-db.json'
+	'cabin-bookings-db.json',
+	'others.json'
 ];
 
 function createData() {
@@ -24,7 +25,11 @@ function createData() {
 		doctors: [{ id: 'DOCTOR-1' }],
 		appointments: [{ id: 'APPOINTMENT-1' }],
 		cabins: [{ id: 'CABIN-1' }],
-		bookings: [{ id: 'BOOKING-1' }]
+		bookings: [{ id: 'BOOKING-1' }],
+		floors: [{ id: 'FLOOR-1' }],
+		rooms: [{ id: 'ROOM-1' }],
+		roomBills: [{ id: 'ROOM-BILL-1' }],
+		roomClaims: [{ id: 'ROOM-CLAIM-1' }]
 	};
 }
 
@@ -34,7 +39,7 @@ async function temporaryDirectory(t) {
 	return directory;
 }
 
-test('initializes the three JSON stores and saves records by workflow', async t => {
+test('initializes all JSON stores and saves records by workflow', async t => {
 	const directory = await temporaryDirectory(t);
 	const data = createData();
 	const loaded = await loadDatabase({ directory, defaults: createData });
@@ -54,6 +59,12 @@ test('initializes the three JSON stores and saves records by workflow', async t 
 		indoorServices: data.indoorServices,
 		labOrders: data.labOrders
 	});
+	assert.deepEqual(JSON.parse(await fs.readFile(path.join(directory, 'others.json'), 'utf8')), {
+		floors: data.floors,
+		rooms: data.rooms,
+		roomBills: data.roomBills,
+		roomClaims: data.roomClaims
+	});
 });
 
 test('migrates the existing single-file database without losing records', async t => {
@@ -66,7 +77,7 @@ test('migrates the existing single-file database without losing records', async 
 	const loaded = await loadDatabase({
 		directory: path.join(directory, 'Database'),
 		legacyFile,
-		defaults: () => ({ users: [], tests: [], agents: [], referrers: [], indoorServices: [], labOrders: [], doctors: [], appointments: [], cabins: [], bookings: [] })
+		defaults: () => ({ users: [], tests: [], agents: [], referrers: [], indoorServices: [], labOrders: [], doctors: [], appointments: [], cabins: [], bookings: [], floors: [], rooms: [], roomBills: [], roomClaims: [] })
 	});
 
 	assert.deepEqual(loaded, existingData);

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1828">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="A secure, read-only live monitoring dashboard for HMSS.">
+    <title>HMSS Monitor · Care operations</title>
+    <link rel="icon" type="image/svg+xml" href="../site_assets/Hospital_Logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <script type="module" src="./script.js"></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <main id="auth-screen" class="auth-screen">
+      <section class="auth-card" aria-labelledby="auth-title">
+        <a class="brand brand-auth" href="#" aria-label="HMSS Monitor home">
+          <img class="brand-mark" src="../site_assets/Hospital_Logo.svg" alt="">
+          <span class="brand-copy"><strong>HMSS</strong><small>CARE MONITOR</small></span>
+        </a>
+        <div class="auth-illustration" aria-hidden="true">
+          <div class="pulse-ring"><span class="pulse-cross">+</span></div>
+          <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+          <span class="spark spark-one"></span><span class="spark spark-two"></span>
+        </div>
+        <p class="eyebrow">CARE OPERATIONS · LIVE</p>
+        <h1 id="auth-title">A clearer view<br>of every detail.</h1>
+        <p class="auth-description">Sign in with your Google account to securely monitor hospital operations across your connected projects.</p>
+        <button id="sign-in-button" class="button button-google" type="button" disabled>
+          <span class="google-g" aria-hidden="true">G</span>
+          <span id="sign-in-label">Connecting securely…</span>
+        </button>
+        <p id="auth-message" class="auth-message" role="status" aria-live="polite">Preparing a secure connection.</p>
+        <div class="trust-note"><span class="lock-icon" aria-hidden="true">◈</span> Google sign-in · Read-only monitoring</div>
+        <p class="developer-credit">Designed for better care · <span>HMSS Monitor v1.0.5</span></p>
+      </section>
+    </main>
+
+    <div id="app-shell" class="app-shell" hidden>
+      <aside class="sidebar">
+        <a class="brand sidebar-brand" href="#" data-route="dashboard" aria-label="HMSS Monitor dashboard">
+          <img class="brand-mark" src="../site_assets/Hospital_Logo.svg" alt="">
+          <span class="brand-copy"><strong>HMSS</strong><small>CARE MONITOR</small></span>
+        </a>
+        <div class="workspace-label">WORKSPACE</div>
+        <nav id="side-navigation" class="side-navigation" aria-label="Main navigation"></nav>
+        <div class="sidebar-bottom">
+          <div class="secure-card">
+            <span class="secure-icon" aria-hidden="true">✓</span>
+            <div><strong>Read-only mode</strong><small>Monitoring access only</small></div>
+          </div>
+          <div class="sidebar-version">HMSS Monitor <span>v1.0.5</span></div>
+        </div>
+      </aside>
+
+      <section class="main-column">
+        <header class="topbar">
+          <div class="mobile-brand">
+            <img class="brand-mark" src="../site_assets/Hospital_Logo.svg" alt="">
+            <span class="brand-copy"><strong>HMSS</strong><small>CARE MONITOR</small></span>
+          </div>
+          <form id="search-form" class="search-form" role="search">
+            <span class="search-icon" aria-hidden="true"></span>
+            <label class="sr-only" for="global-search">Search records or scan a barcode/reference</label>
+            <input id="global-search" type="search" autocomplete="off" placeholder="Type or scan a barcode / reference…">
+            <kbd>ENTER</kbd>
+            <button class="search-submit" type="submit" aria-label="Search records">Go</button>
+          </form>
+          <div class="topbar-actions">
+            <div class="live-indicator"><span class="live-dot"></span><span>LIVE</span></div>
+            <div class="user-menu">
+              <span id="user-avatar" class="user-avatar" aria-hidden="true">H</span>
+              <span id="user-name" class="user-name">Signed in</span>
+              <button id="sign-out-button" class="sign-out-button" type="button" aria-label="Sign out">Sign out</button>
+            </div>
+          </div>
+        </header>
+
+        <nav id="mobile-navigation" class="mobile-navigation" aria-label="Main navigation"></nav>
+
+        <main id="content" class="content" tabindex="-1">
+          <div class="page-heading">
+            <div><p class="eyebrow">HMSS · CARE OPERATIONS</p><h1>Good day<span class="heading-period">.</span></h1><p class="page-subtitle">A live overview of your connected care services.</p></div>
+            <div class="date-chip"><span class="calendar-icon" aria-hidden="true">▦</span><span id="current-date"></span></div>
+          </div>
+          <div id="status-banner" class="status-banner" role="status" aria-live="polite" hidden></div>
+          <div id="view-container"></div>
+        </main>
+        <footer class="app-footer"><span>HMSS Monitor · v1.0.5</span><span>Secure, read-only monitoring</span></footer>
+      </section>
+    </div>
+  </body>
+</html>

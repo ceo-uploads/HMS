@@ -62,9 +62,21 @@ test('summarizes money, workflow, repeat visits, payment status and demographics
 	assert.equal(result.outstandingRecords, 2);
 	assert.equal(result.patients, 3);
 	assert.equal(result.repeatPatients, 1);
-	assert.deepEqual(result.workflows, { diagnostics: 2, appointments: 1, admissions: 1 });
+	assert.deepEqual(result.workflows, { diagnostics: 2, appointments: 1, admissions: 1, roomPayments: 0 });
 	assert.deepEqual(result.ageBands, { '0–17': 1, '18–35': 0, '36–59': 1, '60+': 1, 'Not recorded': 1 });
 	assert.deepEqual(result.genders, { Female: 2, Male: 1, 'Not recorded': 1 });
+});
+
+test('summarizes room payment activity independently from patient services', () => {
+	const result = summarizeRecords([
+		{ kind: 'roomClaims', patientName: 'Room 1 · Ground floor', net: 4000, advance: 4000, due: 0, status: 'Received' },
+		{ kind: 'roomClaims', patientName: 'Room 1 · Ground floor', net: 8000, advance: 8000, due: 0, status: 'Received' }
+	]);
+
+	assert.equal(result.roomPayments, 12000);
+	assert.deepEqual(result.workflows, { diagnostics: 0, appointments: 0, admissions: 0, roomPayments: 2 });
+	assert.equal(result.received, 12000);
+	assert.equal(result.patients, 0);
 });
 
 test('empty analytics safely produce zero rates and amounts', () => {
