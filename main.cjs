@@ -272,7 +272,157 @@ function initialData() {
       { id: 'C-03', name: 'Cabin 03', price: 3000 }, { id: 'C-04', name: 'Cabin 04', price: 3000 },
       { id: 'C-05', name: 'Cabin 05', price: 3500 }, { id: 'C-06', name: 'Cabin 06', price: 3500 }
     ],
-    indoorServices: [], labOrders: [], appointments: [], bookings: [],
+    indoorServices: [
+        {
+            "id": "SVC-003",
+            "name": "Investigation",
+            "price": 0,
+            "children": [
+                {
+                    "id": "SVC-003-A",
+                    "name": "a) Pathology",
+                    "price": 500
+                },
+                {
+                    "id": "SVC-003-B",
+                    "name": "b) X-Ray",
+                    "price": 600
+                },
+                {
+                    "id": "SVC-003-C",
+                    "name": "c) E.C.G",
+                    "price": 400
+                },
+                {
+                    "id": "SVC-003-D",
+                    "name": "d) Ultrasonography",
+                    "price": 1400
+                },
+                {
+                    "id": "SVC-003-E",
+                    "name": "e) Endoscopy",
+                    "price": 2500
+                },
+                {
+                    "id": "SVC-003-F",
+                    "name": "f) Echocardiography",
+                    "price": 2500
+                }
+            ]
+        },
+        {
+            "id": "SVC-004",
+            "name": "Oxygen Charge",
+            "price": 1200
+        },
+        {
+            "id": "SVC-005",
+            "name": "O.T Charge",
+            "price": 3000
+        },
+        {
+            "id": "SVC-006",
+            "name": "Operation Charge",
+            "price": 0,
+            "children": [
+                {
+                    "id": "SVC-006-A",
+                    "name": "a) Surgeon Fee",
+                    "price": 8000
+                },
+                {
+                    "id": "SVC-006-B",
+                    "name": "b) 1st Asstt Fee",
+                    "price": 2500
+                },
+                {
+                    "id": "SVC-006-C",
+                    "name": "c) 2nd Asstt Fee",
+                    "price": 1500
+                },
+                {
+                    "id": "SVC-006-D",
+                    "name": "d) 3rd Asstt Fee",
+                    "price": 1000
+                }
+            ]
+        },
+        {
+            "id": "SVC-007",
+            "name": "Anesthesia Charge",
+            "price": 3000
+        },
+        {
+            "id": "SVC-008",
+            "name": "Delivery Charge",
+            "price": 5000
+        },
+        {
+            "id": "SVC-009",
+            "name": "Dressing Charge",
+            "price": 500
+        },
+        {
+            "id": "SVC-010",
+            "name": "Transfusion Charge",
+            "price": 800
+        },
+        {
+            "id": "SVC-011",
+            "name": "Cost of Medicine",
+            "price": 1000
+        },
+        {
+            "id": "SVC-012",
+            "name": "Consultant Fee",
+            "price": 1000
+        },
+        {
+            "id": "SVC-013",
+            "name": "Medical Board (Doctors)",
+            "price": 2000
+        },
+        {
+            "id": "SVC-014",
+            "name": "Medical Board (Clinic)",
+            "price": 1500
+        },
+        {
+            "id": "SVC-015",
+            "name": "Stitch of Charge",
+            "price": 600
+        },
+        {
+            "id": "SVC-016",
+            "name": "Ambulance Fare",
+            "price": 1500
+        },
+        {
+            "id": "SVC-017",
+            "name": "Ryles-Tub, Enema, Catheterization / IV Cannula Charge",
+            "price": 500
+        },
+        {
+            "id": "SVC-018",
+            "name": "Nabulization",
+            "price": 300
+        },
+        {
+            "id": "SVC-019",
+            "name": "Phototherapy",
+            "price": 800
+        },
+        {
+            "id": "SVC-020",
+            "name": "Cardiac Monitor",
+            "price": 1000
+        },
+        {
+            "id": "SVC-021",
+            "name": "Instrument Charge",
+            "price": 800
+        }
+    ], labOrders: [], appointments: [], bookings: [],
     floors: [], rooms: [], roomBills: [], roomClaims: []
   };
 }

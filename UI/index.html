@@ -3,9 +3,17 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="color-scheme" content="light">
+	<meta name="color-scheme" content="light dark">
 	<title>Kabirhat Private Hospital &amp; Normal Delivery Center | Management</title>
 	<link rel="icon" type="image/svg+xml" href="../site_assets/Hospital_Logo.svg">
+	<script>
+		(function() {
+			try {
+				const theme = localStorage.getItem('hmss-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.setAttribute('data-theme', theme);
+			} catch (e) {}
+		})();
+	</script>
 	<link rel="stylesheet" href="../styles/index.css">
 </head>
 <body>

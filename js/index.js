@@ -150,12 +150,34 @@
 		return `<img class="${className}" src="${HOSPITAL_LOGO}" alt="${escapeHtml(alt)}">`;
 	}
 
+
+	function renderThemeToggle() {
+		const isDark = (document.documentElement.getAttribute('data-theme') || localStorage.getItem('hmss-theme')) === 'dark';
+		return `<label for="theme" class="theme" title="Switch Light / Dark mode (Ctrl+D)">
+			<span class="theme__toggle-wrap">
+				<input id="theme" class="theme__toggle" type="checkbox" role="switch" name="theme" value="dark" ${isDark ? 'checked' : ''} data-action="toggle-theme">
+				<span class="theme__fill"></span>
+				<span class="theme__icon">
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+					<span class="theme__icon-part"></span>
+				</span>
+			</span>
+		</label>`;
+	}
+
 	function windowBar() {
-		return `<div class="windowbar"><div class="window-brand">${hospitalLogo('brand-mark')} ${escapeHtml(HOSPITAL_NAME)}</div><div class="window-actions"><button aria-label="Minimize" data-action="minimize">−</button><button aria-label="Maximize" data-action="maximize">□</button><button class="close" aria-label="Close" data-action="close">×</button></div></div>`;
+		return `<div class="windowbar"><div class="window-brand">${hospitalLogo('brand-mark')} <span>${escapeHtml(HOSPITAL_NAME)}</span></div><div class="windowbar-right"><div class="windowbar-theme">${renderThemeToggle()}</div><div class="window-actions"><button aria-label="Minimize" data-action="minimize">−</button><button aria-label="Maximize" data-action="maximize">□</button><button class="close" aria-label="Close" data-action="close">×</button></div></div></div>`;
 	}
 
 	function applicationHeader() {
-		return `<header class="application-header"><div class="application-nav"><div class="product-lockup">${hospitalLogo('product-symbol')}<span><strong>${escapeHtml(HOSPITAL_NAME)}</strong><small>Clinical management system</small></span></div><nav class="module-nav">${Object.entries(modules).map(([key, item], index) => `<button class="module-link ${state.route.module === key ? 'active' : ''}" data-route="${key}"><span class="module-number">0${index + 1}</span>${item.label}</button>`).join('')}</nav><div class="department-label">Clinical Services</div></div><div class="accelerator-bar"><div class="accelerator-list"><span class="accelerator-caption">SHORTCUTS</span><span><kbd>F1</kbd> Help</span><button data-route="counter" data-route-tab="1"><kbd>F2</kbd> New test</button><button data-route="appointment" data-route-tab="1"><kbd>F3</kbd> Live visit</button><button data-route="booking" data-route-tab="0"><kbd>F5</kbd> Admit</button><span><kbd>F9</kbd> Print</span><span><kbd>F12</kbd> Lock</span></div><div class="system-health"><i></i>Local workstation <span>·</span> Ready</div></div></header>`;
+		return `<header class="application-header"><div class="application-nav"><div class="product-lockup">${hospitalLogo('product-symbol')}<span><strong>${escapeHtml(HOSPITAL_NAME)}</strong><small>Clinical management system</small></span></div><nav class="module-nav">${Object.entries(modules).map(([key, item], index) => `<button class="module-link ${state.route.module === key ? 'active' : ''}" data-route="${key}"><span class="module-number">0${index + 1}</span>${item.label}</button>`).join('')}</nav><div class="department-label">Clinical Services</div></div><div class="accelerator-bar"><div class="accelerator-list"><span class="accelerator-caption">SHORTCUTS</span><span><kbd>F1</kbd> Help</span><button data-route="counter" data-route-tab="1"><kbd>F2</kbd> New test</button><button data-route="appointment" data-route-tab="1"><kbd>F3</kbd> Live visit</button><button data-route="booking" data-route-tab="0"><kbd>F5</kbd> Admit</button><span><kbd>F9</kbd> Print</span><button type="button" data-action="quick-toggle-theme"><kbd>Ctrl+D</kbd> Theme</button><span><kbd>F12</kbd> Lock</span></div><div class="system-health"><i></i>Local workstation <span>·</span> Ready</div></div></header>`;
 	}
 
 	function sidebar() {
@@ -335,6 +357,78 @@
 		).join('') : `<div class="type-select-empty">No matching records found</div>`;
 	}
 
+
+	function getRecentPatients(query = '') {
+		if (!state.data) return [];
+		const q = String(query || '').trim().toLowerCase();
+		const records = [
+			...(state.data.labOrders || []).map(r => ({ ...r, _source: 'Diagnostics', _date: r.createdAt })),
+			...(state.data.appointments || []).map(r => ({ ...r, _source: 'Appointment', _date: r.visitAt || r.createdAt })),
+			...(state.data.bookings || []).map(r => ({ ...r, _source: 'Cabin', _date: r.startAt || r.createdAt }))
+		];
+		records.sort((a, b) => new Date(b._date || 0) - new Date(a._date || 0));
+
+		const seen = new Set();
+		const unique = [];
+		for (const r of records) {
+			const name = String(r.patientName || '').trim();
+			if (!name) continue;
+			const contact = String(r.contact || '').trim();
+			const key = `${name.toLowerCase()}::${contact.replace(/\D/g, '')}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			unique.push({
+				patientName: name,
+				age: r.age ?? '',
+				gender: r.gender || 'Male',
+				contact: contact,
+				date: r._date,
+				source: r._source
+			});
+		}
+		if (!q) return unique;
+		return unique.filter(p => p.patientName.toLowerCase().includes(q));
+	}
+
+	function updatePatientNameSuggestions(input) {
+		const tooltip = document.getElementById('patient-name-tooltip');
+		if (!tooltip || !input) return;
+		const query = input.value.trim();
+		if (!query) {
+			tooltip.style.display = 'none';
+			tooltip.innerHTML = '';
+			return;
+		}
+		const matches = getRecentPatients(query);
+		if (!matches.length) {
+			tooltip.innerHTML = `<div class="patient-tooltip-header"><span>Patient suggestions</span><small>0 matches</small></div><div class="patient-tooltip-empty">No previous record matching "${escapeHtml(query)}"</div>`;
+			tooltip.style.display = 'block';
+			return;
+		}
+		const itemsHtml = matches.slice(0, 8).map(p => `
+			<div class="patient-suggest-item" role="option" data-patient-suggestion data-patient-name="${escapeHtml(p.patientName)}" data-age="${escapeHtml(p.age)}" data-gender="${escapeHtml(p.gender)}" data-contact="${escapeHtml(p.contact)}">
+				<div class="patient-suggest-header">
+					<strong>${escapeHtml(p.patientName)}</strong>
+					<span class="patient-suggest-source">${escapeHtml(p.source)}</span>
+				</div>
+				<div class="patient-suggest-details">
+					<span>Age: <b>${escapeHtml(p.age || '—')}</b></span>
+					<span>Gender: <b>${escapeHtml(p.gender || '—')}</b></span>
+					<span>Mobile: <b>${escapeHtml(p.contact || '—')}</b></span>
+				</div>
+				${p.date ? `<div class="patient-suggest-date">Latest entry: ${dateOnly(p.date)}</div>` : ''}
+			</div>
+		`).join('');
+
+		tooltip.innerHTML = `<div class="patient-tooltip-header"><span>Previous patient records</span><small>Click to auto-fill</small></div><div class="patient-tooltip-list">${itemsHtml}</div>`;
+		tooltip.style.display = 'block';
+	}
+
+	function hidePatientTooltip() {
+		const tooltip = document.getElementById('patient-name-tooltip');
+		if (tooltip) tooltip.style.display = 'none';
+	}
+
 	function renderLabForm() {
 		if (!state.data.tests.length) return `${pageHeading('New test bill', 'Add a clinical test in Management before registering a patient.')}${panel('No tests available', emptyButton('go-tests', 'Manage tests'))}`;
 		const doctorItems = state.data.doctors.map(doctor => ({ id: doctor.id, label: `${doctor.id} · ${doctor.name} · ${doctor.specialty}` }));
@@ -407,7 +501,7 @@
 }
 .type-tag-remove:hover { color: #015282; }
 </style>
-${pageHeading('New test bill', 'Patient details and selected services are saved as one local record.')}<form id="lab-form"><section class="panel"><header class="panel-head"><div><h2>Patient information</h2><p>Enter the details as they should appear on the printed slip.</p></div></header><div class="panel-body"><div class="form-grid">${field('Patient name', 'patientName', '', 'text', true)}${field('Age', 'age', '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true)}${field('Contact number', 'contact', '', 'tel', true)}${typeSelectHtml('Referring doctor · Optional', 'doctorIds', doctorItems, true, 'Search referring doctor...')}${typeSelectHtml('Special referrer', 'referrerId', referrerItems, false, 'Search special referrer...')}${typeSelectHtml('Marketing agent', 'agentId', agentItems, false, 'Search marketing agent...')}${typeSelectHtml('Clinical tests', 'testIds', testItems, true, 'Search clinical tests...', true)}${field('Report delivery date and time', 'deliveryAt', defaultDateTime(), 'datetime-local', true)}${field('Remarks', 'remarks', '', 'text')}${field('Additional note', 'note', '', 'text')}</div></div></section><div class="two-column"><section class="panel"><header class="panel-head"><div><h2>Payment</h2><p>Discount and advance are optional.</p></div></header><div class="panel-body"><div class="form-grid">${field('Discount (৳)', 'discount', '0', 'number')}${field('Advance received (৳)', 'advance', '0', 'number')}${field('Extra description', 'description', '', 'text')}</div><label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11px"><input type="checkbox" name="fullPaid"> Mark full amount received</label></div></section><section class="panel"><header class="panel-head"><div><h2>Bill preview</h2><p>Totals update when you save.</p></div></header><div class="panel-body"><div class="notice">The bill ID is generated automatically and checked against existing records.</div><div class="summary-box"><div class="summary-row"><span>Selected tests</span><b id="bill-test-count">0</b></div><div class="summary-row"><span>Subtotal</span><b id="bill-subtotal">৳ 0</b></div><div class="summary-row total"><span>Net payable</span><b id="bill-total">৳ 0</b></div><div class="summary-row"><span>In words</span><b id="bill-words">Zero taka only</b></div></div></div></section></div><div class="form-actions"><button class="button button-secondary" type="button" data-route="counter" data-route-tab="0">Cancel</button><button class="button button-primary" type="submit">Save bill&nbsp; →</button></div></form>`;
+${pageHeading('New test bill', 'Patient details and selected services are saved as one local record.')}<form id="lab-form"><section class="panel"><header class="panel-head"><div><h2>Patient information</h2><p>Enter the details as they should appear on the printed slip.</p></div></header><div class="panel-body"><div class="form-grid"><div class="field patient-name-field"><label for="field-patientName">Patient name</label><div class="patient-input-wrap"><input id="field-patientName" name="patientName" type="text" value="" required autocomplete="off" placeholder="Enter patient name"></div><div id="patient-name-tooltip" class="patient-name-tooltip" style="display:none;" role="listbox"></div></div>${field('Age', 'age', '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true)}${field('Contact number', 'contact', '', 'tel', true)}${typeSelectHtml('Referring doctor · Optional', 'doctorIds', doctorItems, true, 'Search referring doctor...')}${typeSelectHtml('Special referrer', 'referrerId', referrerItems, false, 'Search special referrer...')}${typeSelectHtml('Marketing agent', 'agentId', agentItems, false, 'Search marketing agent...')}${typeSelectHtml('Clinical tests', 'testIds', testItems, true, 'Search clinical tests...', true)}${field('Report delivery date and time', 'deliveryAt', defaultDateTime(), 'datetime-local', true)}${field('Remarks', 'remarks', '', 'text')}${field('Additional note', 'note', '', 'text')}</div></div></section><div class="two-column"><section class="panel"><header class="panel-head"><div><h2>Payment</h2><p>Discount and advance are optional.</p></div></header><div class="panel-body"><div class="form-grid">${field('Discount (৳)', 'discount', '0', 'number')}${field('Advance received (৳)', 'advance', '0', 'number')}${field('Extra description', 'description', '', 'text')}</div><label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11px"><input type="checkbox" name="fullPaid"> Mark full amount received</label></div></section><section class="panel"><header class="panel-head"><div><h2>Bill preview</h2><p>Totals update when you save.</p></div></header><div class="panel-body"><div class="notice">The bill ID is generated automatically and checked against existing records.</div><div class="summary-box"><div class="summary-row"><span>Selected tests</span><b id="bill-test-count">0</b></div><div class="summary-row"><span>Subtotal</span><b id="bill-subtotal">৳ 0</b></div><div class="summary-row total"><span>Net payable</span><b id="bill-total">৳ 0</b></div><div class="summary-row"><span>In words</span><b id="bill-words">Zero taka only</b></div></div></div></section></div><div class="form-actions"><button class="button button-secondary" type="button" data-route="counter" data-route-tab="0">Cancel</button><button class="button button-primary" type="submit">Save bill&nbsp; →</button></div></form>`;
 	}
 
 	function renderLabList(onlyPending) {
@@ -579,8 +673,8 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 
 	function renderReferralManagement() {
 		const agents = state.data.agents.filter(searchRecord).map(agent => `<tr><td><div class="profile-cell">${profileImage(agent)}<strong>${escapeHtml(agent.name)}</strong></div></td><td>${escapeHtml(agent.id)}</td><td>${escapeHtml(agent.contact)}</td><td>${state.data.referrers.filter(referrer => referrer.agentId === agent.id).length}</td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="see-referrers" data-id="${escapeHtml(agent.id)}">See referrers</button><button class="button button-secondary button-small" data-action="agent-dashboard" data-id="${escapeHtml(agent.id)}">Dashboard</button></div></td>${manageActions('agents', agent)}</tr>`);
-		const referrers = state.data.referrers.filter(searchRecord).map(referrer => `<tr><td><div class="profile-cell">${profileImage(referrer)}<strong>${escapeHtml(referrer.name)}</strong></div></td><td>${escapeHtml(referrer.id)}</td><td>${escapeHtml(referrer.contact)}</td><td>${escapeHtml(state.data.agents.find(agent => agent.id === referrer.agentId)?.name || 'Unassigned')}</td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="view-referrer" data-id="${escapeHtml(referrer.id)}">Biodata</button><button class="button button-secondary button-small" data-action="referrer-dashboard" data-id="${escapeHtml(referrer.id)}">Dashboard</button></div></td>${manageActions('referrers', referrer)}</tr>`);
-		return `${pageHeading('Referral network', 'Keep marketing partners and their special referrers organized.', `<div class="inline-actions"><button class="button button-secondary" data-action="add-item" data-kind="agents">＋&nbsp; Add agent</button><button class="button button-primary" data-action="add-item" data-kind="referrers">＋&nbsp; Add referrer</button></div>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search agent, referrer or contact" value="${escapeHtml(state.query)}"></div>${scanControl()}</div>${panel('Marketing agents', table(['Agent', 'Code', 'Contact', 'Referrers', '', 'Actions'], agents))}${panel('Special referrers', table(['Referrer', 'Code', 'Contact', 'Agent', '', 'Actions'], referrers))}`;
+		const referrers = state.data.referrers.filter(searchRecord).map(referrer => `<tr><td><div class="profile-cell">${profileImage(referrer)}<strong>${escapeHtml(referrer.name)}</strong></div></td><td>${escapeHtml(referrer.id)}</td><td>${escapeHtml(referrer.contact)}</td><td>${escapeHtml(state.data.agents.find(agent => agent.id === referrer.agentId)?.name || 'Unassigned')}</td><td>${escapeHtml(referrer.nid || '—')}</td><td>${escapeHtml(referrer.institute || '—')}</td><td>${escapeHtml(referrer.address || '—')}</td><td><div class="table-actions"><button class="button button-secondary button-small" data-action="view-referrer" data-id="${escapeHtml(referrer.id)}">Biodata</button><button class="button button-secondary button-small" data-action="referrer-dashboard" data-id="${escapeHtml(referrer.id)}">Dashboard</button></div></td>${manageActions('referrers', referrer)}</tr>`);
+		return `${pageHeading('Referral network', 'Keep marketing partners and their special referrers organized.', `<div class="inline-actions"><button class="button button-secondary" data-action="add-item" data-kind="agents">＋&nbsp; Add agent</button><button class="button button-primary" data-action="add-item" data-kind="referrers">＋&nbsp; Add referrer</button></div>`)}<div class="toolbar"><div class="search-field"><span>⌕</span><input data-search placeholder="Search agent, referrer or contact" value="${escapeHtml(state.query)}"></div>${scanControl()}</div>${panel('Marketing agents', table(['Agent', 'Code', 'Contact', 'Referrers', '', 'Actions'], agents))}${panel('Special referrers', table(['Referrer', 'Code', 'Contact', 'Agent', 'NID', 'Institute', 'Address', 'Actions'], referrers))}`;
 	}
 
 	function renderArchive() {
@@ -864,7 +958,7 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 			cabins: [['name', 'Cabin name', 'text', true], ['price', 'Daily rate (৳)', 'number', true]],
 			indoorServices: [['name', 'Service item name', 'text', true], ['price', 'Parent item price (৳)', 'number', false]],
 			agents: [['name', 'Agent name', 'text', true], ['contact', 'Contact number', 'tel']],
-			referrers: [['name', 'Referrer name', 'text', true], ['contact', 'Contact number', 'tel']]
+			referrers: [['name', 'Referrer name', 'text', true], ['contact', 'Contact number', 'tel'], ['nid', 'NID number · Optional', 'text'], ['institute', 'Institute · Optional', 'text'], ['address', 'Address · Optional', 'text']]
 		}[type];
 		const title = `${editing ? 'Edit' : 'Add'} ${type === 'tests' ? 'clinical test' : type === 'doctors' ? 'doctor' : type === 'cabins' ? 'cabin' : type === 'indoorServices' ? 'indoor service item' : type === 'agents' ? 'marketing agent' : 'special referrer'}`;
 		const fileButton = type === 'indoorServices'
@@ -907,9 +1001,12 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 			if (!parentItem && !childItems && !autoItem) return '';
 			return `<section class="service-option-group">${service.children?.length ? `<strong class="service-group-title">${escapeHtml(service.name)}</strong>` : ''}${autoItem}${parentItem}${childItems}</section>`;
 		}).join('') || '<span class="field-hint">Add service items in Management → Cabins.</span>';
-		const builtInFees = modal.addServices ? 0 : automaticIndoorServices(!isEdit).reduce((sum, item) => sum + item.price, 0);
-		const defaultEstimate = (modal.addServices ? 0 : (cabin?.price ?? booking?.dailyRate ?? 0)) + builtInFees;
-		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>${modal.addServices ? 'Add cabin service items' : isEdit ? 'Renew cabin stay' : `Admit patient · ${escapeHtml(cabin?.name || '')}`}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><form id="booking-form" data-id="${escapeHtml(booking?.id || '')}" data-add-services="${Boolean(modal.addServices)}" data-cabin="${escapeHtml(booking?.cabinId || cabin?.id || '')}"><div class="modal-body"><div class="form-grid">${field('Patient name', 'patientName', booking?.patientName || '', 'text', true)}${field('Contact number', 'contact', booking?.contact || '', 'tel', true)}${field('Age', 'age', booking?.age || '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true, false, null, booking?.gender)}${field('Start date and time', 'startAt', defaultStart, 'datetime-local', true)}${field('Duration (days)', 'durationDays', 1, 'number', true)}${field('Release date and time', 'endAt', defaultEnd, 'datetime-local', true)}<div class="field full"><label>Indoor service items</label><input class="control service-search" type="search" data-service-search placeholder="Find a parent or child service"><div class="service-options">${serviceOptions}</div></div>${field('Discount (৳)', 'discount', booking?.discount || '0', 'number')}${field('Advance received (৳)', 'advance', booking?.advance || '0', 'number')}${field('Daily cabin rate (৳)', 'price', cabin?.price ?? booking?.dailyRate ?? 0, 'number', true)}${field('Notes', 'notes', booking?.notes || '', 'text')}</div><div class="summary-box"><div class="summary-row"><span>Estimated bill</span><b id="booking-estimate">${money(defaultEstimate)}</b></div><div class="summary-row"><span>Cabin</span><b>${escapeHtml(cabin?.name || cabinName(booking?.cabinId))}</b></div><div class="field-hint">Cabin/bed and admission charges are included automatically. Select any additional parent or child services above.</div></div></div><footer class="modal-foot"><button class="button button-secondary" type="button" data-action="close-modal">Cancel</button><button class="button button-primary" type="submit">${modal.addServices ? 'Add selected items' : isEdit ? 'Save renewal' : 'Save admission'}</button></footer></form></section></div>`;
+		const builtInAuto = modal.addServices ? [] : automaticIndoorServices(!isEdit);
+		const defaultAdmission = builtInAuto.filter(item => indoorFeeKind(item.name) === 'admission').reduce((sum, item) => sum + item.price, 0);
+		const defaultAutoCabin = builtInAuto.filter(item => indoorFeeKind(item.name) === 'cabin').reduce((sum, item) => sum + item.price, 0);
+		const defaultCabinCharge = (modal.addServices ? 0 : (cabin?.price ?? booking?.dailyRate ?? 0)) + defaultAutoCabin;
+		const defaultEstimate = defaultCabinCharge + defaultAdmission;
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>${modal.addServices ? 'Add cabin service items' : isEdit ? 'Renew cabin stay' : `Admit patient · ${escapeHtml(cabin?.name || '')}`}</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><form id="booking-form" data-id="${escapeHtml(booking?.id || '')}" data-add-services="${Boolean(modal.addServices)}" data-cabin="${escapeHtml(booking?.cabinId || cabin?.id || '')}"><div class="modal-body"><div class="form-grid">${field('Patient name', 'patientName', booking?.patientName || '', 'text', true)}${field('Contact number', 'contact', booking?.contact || '', 'tel', true)}${field('Age', 'age', booking?.age || '', 'number', true)}${selectField('Gender', 'gender', ['Male', 'Female', 'Other'], true, false, null, booking?.gender)}${field('Start date and time', 'startAt', defaultStart, 'datetime-local', true)}${field('Duration (days)', 'durationDays', 1, 'number', true)}${field('Release date and time', 'endAt', defaultEnd, 'datetime-local', true)}<div class="field full"><label>Indoor service items</label><input class="control service-search" type="search" data-service-search placeholder="Find a parent or child service"><div class="service-options">${serviceOptions}</div></div>${field('Discount (৳)', 'discount', booking?.discount || '0', 'number')}${field('Advance received (৳)', 'advance', booking?.advance || '0', 'number')}${field('Daily cabin rate (৳)', 'price', cabin?.price ?? booking?.dailyRate ?? 0, 'number', true)}${field('Notes', 'notes', booking?.notes || '', 'text')}</div><div class="summary-box"><div class="summary-row"><span>Cabin / Bed charge</span><b id="booking-cabin-charge">${money(defaultCabinCharge)}</b></div><div class="summary-row"><span>Admission fee</span><b id="booking-admission-charge">${money(defaultAdmission)}</b></div><div class="summary-row"><span>Added service items</span><b id="booking-services-charge">৳ 0</b></div><div class="summary-row" style="color: #0369a1;"><span>Service charge (20% on items)</span><b id="booking-service-charge">৳ 0</b></div><div class="summary-row total"><span>Estimated total bill</span><b id="booking-estimate">${money(defaultEstimate)}</b></div><div class="summary-row"><span>Cabin</span><b>${escapeHtml(cabin?.name || cabinName(booking?.cabinId))}</b></div><div class="field-hint">A fixed 20% service charge is added to service items (excluding cabin/bed charge and admission fee).</div></div></div><footer class="modal-foot"><button class="button button-secondary" type="button" data-action="close-modal">Cancel</button><button class="button button-primary" type="submit">${modal.addServices ? 'Add selected items' : isEdit ? 'Save renewal' : 'Save admission'}</button></footer></form></section></div>`;
 	}
 
 	function serviceOption(value, name, price, alreadyAdded, automatic = false, parentName = '') {
@@ -948,7 +1045,7 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 		const referrer = state.data.referrers.find(item => item.id === modal.id);
 		if (!referrer) return '';
 		const agent = state.data.agents.find(item => item.id === referrer.agentId);
-		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>Special referrer profile</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body profile-bio">${profileImage(referrer)}<h3>${escapeHtml(referrer.name)}</h3><p>${escapeHtml(referrer.contact || 'No contact listed')}</p><p>Marketing agent · ${escapeHtml(agent?.name || 'Unassigned')}</p></div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="edit-item" data-kind="referrers" data-id="${escapeHtml(referrer.id)}">Edit profile</button></footer></section></div>`;
+		return `<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true"><header class="modal-head"><h2>Special referrer profile</h2><button class="icon-button" data-action="close-modal" aria-label="Close">×</button></header><div class="modal-body profile-bio">${profileImage(referrer)}<h3>${escapeHtml(referrer.name)}</h3><p>${escapeHtml(referrer.contact || 'No contact listed')}</p><p>Marketing agent · ${escapeHtml(agent?.name || 'Unassigned')}</p>${referrer.nid ? `<p>NID: <b>${escapeHtml(referrer.nid)}</b></p>` : ''}${referrer.institute ? `<p>Institute: <b>${escapeHtml(referrer.institute)}</b></p>` : ''}${referrer.address ? `<p>Address: <b>${escapeHtml(referrer.address)}</b></p>` : ''}</div><footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="edit-item" data-kind="referrers" data-id="${escapeHtml(referrer.id)}">Edit profile</button></footer></section></div>`;
 	}
 
 	function renderReferralDashboard(modal) {
@@ -993,11 +1090,12 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 		const serviceRows = isLab ? (record.tests || []).map(test => `<tr><td>${escapeHtml(test.code)}</td><td>${escapeHtml(test.name)}</td><td>${money(test.price)}</td></tr>`).join('') : '';
 		const details = isLab ? [['Patient', record.patientName], ['Age / gender', `${record.age} / ${record.gender}`], ['Contact', record.contact], ['Referring doctor', (record.doctors || []).map(item => item.name).join(', ') || '—'], ['Referral source', record.agentName || 'No referral'], ['Special referrer', record.referrerName || '—'], ['Remarks', record.remarks || '—'], ['Additional note', record.note || '—'], ['Extra description', record.description || '—'], ['Registered', dateTime(record.createdAt)], ['Report delivery', dateTime(record.deliveryAt)], ['Report status', record.status], ['Full paid', record.fullPaid ? 'Yes' : 'No']]
 			: isAppointment ? [['Patient', record.patientName], ['Patient ID', record.patientId || record.recordId], ['Contact', record.contact], ['Age / gender', `${record.age} / ${record.gender}`], ['Doctor', doctorName(record.doctorId)], ['Visit time', dateTime(record.visitAt)], ['Chamber time', `${record.fromTime || '—'} to ${record.toTime || '—'}`], ['Patient type', record.patientType], ['History record', record.historyRecordId || '—'], ['Status', record.status]]
-				: [['Patient', record.patientName], ['Slip No.', record.slipNo || '—'], ['Contact', record.contact], ['Age / gender', `${record.age || '—'} / ${record.gender || '—'}`], ['Cabin', cabinName(record.cabinId)], ['Admitted', dateTime(record.startAt)], ['Release', dateTime(record.endAt)], ['Duration', `${record.days} day(s)`], ['Daily rate', money(record.dailyRate)], ['Services', (record.extras || []).map(item => `${item.name} (${money(item.price)})`).join(', ') || '—'], ['Notes', record.notes || '—'], ['Status', record.status]];
+				: [['Patient', record.patientName], ['Slip No.', record.slipNo || '—'], ['Contact', record.contact], ['Age / gender', `${record.age || '—'} / ${record.gender || '—'}`], ['Cabin', cabinName(record.cabinId)], ['Admitted', dateTime(record.startAt)], ['Release', dateTime(record.endAt)], ['Duration', `${record.days} day(s)`], ['Daily rate', money(record.dailyRate)], ['Services', (record.extras || []).map(item => `${item.name} (${money(item.price)})`).join(', ') || '—'], ['Service charge (20%)', money(record.serviceCharge ?? Math.round(getCabinServiceItemsTotal(record.extras) * 0.20))], ['Notes', record.notes || '—'], ['Status', record.status]];
 		const pageSize = isLab || isAppointment ? 'A5' : 'A4';
 		const actionButton = modal.type === 'print' ? '' : `<footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="print-record" data-kind="${modal.kind}" data-id="${record.id}">Print</button><button class="button button-primary" data-action="save-pdf" data-page-size="${pageSize}">Save PDF</button></footer>`;
 		const labTable = isLab ? `<div class="table-wrap"><table><thead><tr><th>Code</th><th>Test</th><th>Price</th></tr></thead><tbody>${serviceRows}</tbody></table></div>` : '';
-		const payment = !isAppointment ? `<div class="summary-box"><div class="summary-row"><span>Subtotal</span><b>${money(record.subtotal ?? record.net ?? record.price)}</b></div><div class="summary-row"><span>Discount</span><b>${money(record.discount)}</b></div><div class="summary-row"><span>Received</span><b>${money(record.advance)}</b></div><div class="summary-row total"><span>Net / due</span><b>${money(record.net ?? record.price)} / ${money(record.due)}</b></div>${isLab ? `<div class="summary-row"><span>Amount in words</span><b>${amountInWords(record.net)}</b></div>` : ''}</div>` : `<div class="summary-box"><div class="summary-row total"><span>Visit fee</span><b>${money(record.price)}</b></div></div>`;
+		const bookingSc = modal.kind === 'bookings' ? (record.serviceCharge ?? Math.round(getCabinServiceItemsTotal(record.extras) * 0.20)) : 0;
+		const payment = !isAppointment ? `<div class="summary-box"><div class="summary-row"><span>Subtotal</span><b>${money(record.subtotal ?? record.net ?? record.price)}</b></div>${bookingSc ? `<div class="summary-row" style="color:#0369a1"><span>Service charge (20%)</span><b>${money(bookingSc)}</b></div>` : ''}<div class="summary-row"><span>Discount</span><b>${money(record.discount)}</b></div><div class="summary-row"><span>Received</span><b>${money(record.advance)}</b></div><div class="summary-row total"><span>Net / due</span><b>${money(record.net ?? record.price)} / ${money(record.due)}</b></div>${isLab ? `<div class="summary-row"><span>Amount in words</span><b>${amountInWords(record.net)}</b></div>` : ''}</div>` : `<div class="summary-box"><div class="summary-row total"><span>Visit fee</span><b>${money(record.price)}</b></div></div>`;
 		const sheet = isLab ? renderTestCashMemo(record) : modal.kind === 'bookings' ? renderIndoorBill(record) : `<article class="print-sheet ${isAppointment ? 'print-sheet--visit' : ''}"><header class="print-head"><div class="print-brand-head">${hospitalLogo('print-hospital-logo')}<div><h2>${escapeHtml(HOSPITAL_NAME)}</h2><span>Patient service record · Local copy</span></div></div><div style="text-align:right"><b>${escapeHtml(title)}</b><br>${dateTime(record.createdAt || record.visitAt || record.startAt)}</div></header><svg class="record-barcode" data-barcode="${escapeHtml(title)}"></svg><div class="form-grid" style="margin-top:16px">${details.map(([label, value]) => `<div><small style="color:#718078">${label}</small><div style="margin-top:3px;font-weight:600">${escapeHtml(value)}</div></div>`).join('')}</div>${labTable}${payment}<div class="print-note">Please retain this slip for your records. Thank you for choosing ${escapeHtml(HOSPITAL_NAME)}.</div></article>`;
 		const printActions = modal.type === 'print' ? `<footer class="modal-foot"><button class="button button-secondary" data-action="close-modal">Close</button><button class="button button-secondary" data-action="print-now">Print</button><button class="button button-primary" data-action="save-pdf" data-page-size="${pageSize}">Save PDF</button></footer>` : actionButton;
 		const recordInspector = `<details class="record-inspector"><summary>Full saved record</summary><pre>${escapeHtml(JSON.stringify(record, null, 2))}</pre></details>`;
@@ -1028,6 +1126,9 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 		const extras = record.extras || [];
 		const admissionTotal = extras.filter(item => indoorFeeKind(item.name) === 'admission').reduce((sum, item) => sum + Number(item.price || 0), 0);
 		const cabinTotal = extras.filter(item => indoorFeeKind(item.name) === 'cabin').reduce((sum, item) => sum + Number(item.price || 0), 0);
+		const serviceItems = extras.filter(service => !indoorFeeKind(service.name));
+		const serviceItemsTotal = serviceItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+		const serviceCharge = record.serviceCharge ?? Math.round(serviceItemsTotal * 0.20);
 		const rows = [
 			{ number: '01', label: 'Admission Fee', value: admissionTotal },
 			{ number: '02', label: 'Cabin/Bed Charge', value: Number(record.dailyRate || 0) * Number(record.days || 1) + cabinTotal },
@@ -1061,11 +1162,34 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 			{ number: '20', label: 'Cardiac Monitor' },
 			{ number: '21', label: 'Instrument Charge' }
 		];
-		extras.filter(service => !indoorFeeKind(service.name)).forEach(service => rows.push({
+		const unmappedExtras = [];
+		for (const service of serviceItems) {
+			const sName = String(service.name || '').trim().toLowerCase();
+			const match = rows.find(r => {
+				const rLabel = r.label.toLowerCase();
+				return rLabel === sName ||
+					rLabel.replace(/^[a-z]\)\s*/, '') === sName.replace(/^[a-z]\)\s*/, '') ||
+					rLabel.replace(/^[0-9]+\s*/, '') === sName.replace(/^[0-9]+\s*/, '') ||
+					(sName.length > 3 && rLabel.includes(sName)) ||
+					(rLabel.length > 3 && sName.includes(rLabel));
+			});
+			if (match) {
+				match.value = (match.value || 0) + Number(service.price || 0);
+			} else {
+				unmappedExtras.push(service);
+			}
+		}
+		unmappedExtras.forEach(service => rows.push({
 			number: String(rows.filter(row => row.number).length + 1).padStart(2, '0'),
 			label: service.parentName ? `${service.parentName} / ${service.name}` : service.name,
 			value: Number(service.price || 0)
 		}));
+		if (serviceCharge > 0) {
+			rows.push({
+				label: `★ Service Charge: 20% (${money(serviceCharge)}) added on service items (${money(serviceItemsTotal)})`,
+				subcharge: true
+			});
+		}
 		const half = Math.ceil(rows.length / 2);
 		const copyTable = () => `<div class="indoor-tables">${[rows.slice(0, half), rows.slice(half)].map(items => `<table class="indoor-table"><tbody>${items.map(row => `<tr${row.subcharge ? ' class="indoor-subcharge"' : ''}><td>${row.number || ''}</td><td>${escapeHtml(row.label)}</td><td>${row.value ? money(row.value) : ''}</td></tr>`).join('')}</tbody></table>`).join('')}</div>`;
 		const copy = label => `<section class="indoor-copy">
@@ -1073,7 +1197,7 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 			<div class="indoor-meta"><b>No. ${escapeHtml(record.slipNo || record.bookingId)}</b><svg data-barcode="${escapeHtml(record.bookingId)}"></svg></div>
 			<div class="indoor-patient"><div><span>Name</span><b>${escapeHtml(record.patientName)}</b></div><div><span>Reg No.</span><b>${escapeHtml(record.bookingId)}</b></div><div><span>Address / Contact</span><b>${escapeHtml(record.contact || '—')}</b></div><div><span>Cabin / Bed No.</span><b>${escapeHtml(cabinName(record.cabinId))}</b></div><div class="indoor-demographic"><span>Age</span><b>${escapeHtml(record.age || '—')}</b></div><div class="indoor-demographic"><span>Gender</span><b>${escapeHtml(record.gender || '—')}</b></div><div><span>Admission Date</span><b>${dateOnly(record.startAt)}</b></div><div><span>Release Date</span><b>${dateOnly(record.endAt)}</b></div></div>
 			${copyTable()}
-			<div class="indoor-totals"><div class="indoor-words"><b>Tk. (In Word):</b> ${escapeHtml(amountInWords(record.net))}</div><div class="indoor-sums"><div><span>Sub Total</span><b>${money(record.subtotal)}</b></div><div><span>Service Charge</span><b>${money(0)}</b></div><div><span>Vat</span><b>${money(0)}</b></div><div><span>Net Total</span><b>${money(record.net)}</b></div><div><span>Advance</span><b>${money(record.advance)}</b></div><div><span>Balance</span><b>${money(record.due)}</b></div></div></div>
+			<div class="indoor-totals"><div class="indoor-words"><b>Tk. (In Word):</b> ${escapeHtml(amountInWords(record.net))}${serviceCharge > 0 ? `<div class="indoor-sc-remark">※ Remark: 20% Service Charge (${money(serviceCharge)}) added on service items (${money(serviceItemsTotal)}).</div>` : ''}</div><div class="indoor-sums"><div><span>Sub Total</span><b>${money(record.subtotal)}</b></div><div><span>Service Charge (20%)</span><b>${money(serviceCharge)}</b></div><div><span>Vat</span><b>${money(0)}</b></div><div><span>Net Total</span><b>${money(record.net)}</b></div><div><span>Advance</span><b>${money(record.advance)}</b></div><div><span>Balance</span><b>${money(record.due)}</b></div></div></div>
 			<footer class="indoor-signatures"><span>Signature of Recipient</span><span>Checked by</span><span>Accountant</span></footer>
 			<footer class="print-credit"><span class="print-motto">বিশ্বমানের সর্বাধুনিক চিকিৎসা সেবা প্রদানের মাধ্যমে, রোগীকে সুস্থ করে পরিবারের মুখে হাসি ফুটানই আমাদের অঙ্গীকার।</span><span class="developer-credit">Developed By : <img class="developer-logo" src="../site_assets/unreal_studio_icon.svg" alt=""> - Unreal Studio ©</span></footer>
 		</section>`;
@@ -1135,6 +1259,9 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 	function cabinName(cabinId) { return state.data.cabins.find(item => item.id === cabinId)?.name || cabinId || 'Cabin removed'; }
 	function recordKind(record) { return record.kind === 'roomClaims' || state.data.roomClaims.includes(record) ? 'roomClaims' : state.data.labOrders.includes(record) ? 'labOrders' : state.data.appointments.includes(record) ? 'appointments' : 'bookings'; }
 	function sumExtras(extras) { return (extras || []).reduce((sum, item) => sum + Number(item.price || 0), 0); }
+	function getCabinServiceItems(extras) { return (extras || []).filter(item => !indoorFeeKind(item.name)); }
+	function getCabinServiceItemsTotal(extras) { return getCabinServiceItems(extras).reduce((sum, item) => sum + Number(item.price || 0), 0); }
+	function calculateCabinServiceCharge(extras) { return Math.round(getCabinServiceItemsTotal(extras) * 0.20); }
 	function indoorServiceExtra(service, child = null) {
 		return {
 			id: child?.id || service.id,
@@ -1170,12 +1297,30 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 	function updateBookingEstimate(form) {
 		const output = form.querySelector('#booking-estimate');
 		if (!output) return;
-		const days = Math.max(1, Number(form.elements.durationDays.value) || 1);
+		const days = Math.max(1, Number(form.elements.durationDays?.value) || 1);
 		const addServices = form.dataset.addServices === 'true';
-		const cabinCharge = addServices ? 0 : moneyInput(form.elements.price.value) * days;
-		const automaticFees = addServices ? 0 : automaticIndoorServices(!form.dataset.id).reduce((sum, item) => sum + item.price, 0);
-		const selectedServices = selectedIndoorServices(form).reduce((sum, item) => sum + item.price, 0);
-		output.textContent = money(cabinCharge + automaticFees + selectedServices);
+		const dailyPrice = moneyInput(form.elements.price?.value);
+		const cabinCharge = addServices ? 0 : dailyPrice * days;
+		const autoServices = addServices ? [] : automaticIndoorServices(!form.dataset.id);
+		const admissionFee = autoServices.filter(item => indoorFeeKind(item.name) === 'admission').reduce((sum, item) => sum + item.price, 0);
+		const autoCabinFee = autoServices.filter(item => indoorFeeKind(item.name) === 'cabin').reduce((sum, item) => sum + item.price, 0);
+		const selectedServices = selectedIndoorServices(form);
+		const serviceItems = selectedServices.filter(item => !indoorFeeKind(item.name));
+		const serviceItemsTotal = serviceItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+		const serviceCharge = Math.round(serviceItemsTotal * 0.20);
+		const totalServicesWithAuto = selectedServices.reduce((sum, item) => sum + item.price, 0);
+		const totalBill = cabinCharge + autoCabinFee + admissionFee + totalServicesWithAuto + serviceCharge;
+
+		const cabinEl = form.querySelector('#booking-cabin-charge');
+		if (cabinEl) cabinEl.textContent = money(cabinCharge + autoCabinFee);
+		const admissionEl = form.querySelector('#booking-admission-charge');
+		if (admissionEl) admissionEl.textContent = money(admissionFee);
+		const servicesEl = form.querySelector('#booking-services-charge');
+		if (servicesEl) servicesEl.textContent = money(serviceItemsTotal);
+		const scEl = form.querySelector('#booking-service-charge');
+		if (scEl) scEl.textContent = money(serviceCharge);
+
+		output.textContent = money(totalBill);
 	}
 
 	function go(module, tab = 0) { location.hash = routeHref(module, tab); }
@@ -1186,6 +1331,26 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 	}
 
 	appRoot.addEventListener('click', async event => {
+		const suggestItem = event.target.closest('[data-patient-suggestion]');
+		if (suggestItem) {
+			const form = document.getElementById('lab-form');
+			if (form) {
+				const patientName = suggestItem.dataset.patientName || '';
+				const age = suggestItem.dataset.age || '';
+				const gender = suggestItem.dataset.gender || 'Male';
+				const contact = suggestItem.dataset.contact || '';
+				if (form.elements.patientName) form.elements.patientName.value = patientName;
+				if (form.elements.age) form.elements.age.value = age;
+				if (form.elements.gender) form.elements.gender.value = gender;
+				if (form.elements.contact) form.elements.contact.value = contact;
+				hidePatientTooltip();
+				toast(`Patient ${patientName} selected.`);
+			}
+			return;
+		}
+		if (!event.target.closest('#patient-name-tooltip') && event.target.id !== 'field-patientName') {
+			hidePatientTooltip();
+		}
 		const button = event.target.closest('[data-action], [data-route], [data-tab]');
 		const selectItem = event.target.closest('[data-select-id]');
 		if (selectItem) {
@@ -1407,6 +1572,15 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 		}
 		if (action === 'new-lab') go('counter', 1);
 		if (action === 'go-tests') go('management', 0);
+		if (action === 'quick-toggle-theme') {
+			const current = document.documentElement.getAttribute('data-theme') || 'light';
+			const next = current === 'dark' ? 'light' : 'dark';
+			document.documentElement.setAttribute('data-theme', next);
+			localStorage.setItem('hmss-theme', next);
+			document.querySelectorAll('#theme, .theme__toggle').forEach(el => el.checked = (next === 'dark'));
+			toast(`Switched to ${next === 'dark' ? 'Dark / Night' : 'Light'} mode.`);
+			return;
+		}
 		if (action === 'book-doctor') { sessionStorage.setItem('hmss-doctor', button.dataset.doctor); go('appointment', button.dataset.pre ? 2 : 1); }
 		if (action === 'book-cabin') { state.modal = { type: 'booking', cabinId: button.dataset.cabin }; render(); }
 		if (action === 'renew-booking') { state.modal = { type: 'renew', id: button.dataset.id }; render(); }
@@ -1545,12 +1719,16 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 			const replacement = document.querySelector(selector);
 			replacement?.focus(); replacement?.setSelectionRange(cursor, cursor);
 		}
+		if (event.target.form?.id === 'lab-form' && event.target.name === 'patientName') updatePatientNameSuggestions(event.target);
 		if (event.target.form?.id === 'lab-form' && ['testIds', 'discount'].includes(event.target.name)) updateBillPreview();
 		if (event.target.form?.id === 'appointment-form' && ['contact', 'patientName'].includes(event.target.name)) updatePatientHistory(event.target.form.elements.contact.value, event.target.form.elements.patientName.value);
 		if (event.target.form?.id === 'appointment-form' && event.target.name === 'doctorId') { updateVisitPrice(); fillDoctorSchedule(); }
 	});
 
 	appRoot.addEventListener('focusin', event => {
+		if (event.target.form?.id === 'lab-form' && event.target.name === 'patientName' && event.target.value.trim().length > 0) {
+			updatePatientNameSuggestions(event.target);
+		}
 		const input = event.target.closest('[data-type-select-input]');
 		if (input) {
 			const container = input.closest('[data-type-select-container]');
@@ -1563,6 +1741,14 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 	});
 
 	appRoot.addEventListener('change', event => {
+		if (event.target.matches('[data-action="toggle-theme"], #theme, .theme__toggle')) {
+			const isDark = event.target.checked;
+			const theme = isDark ? 'dark' : 'light';
+			document.documentElement.setAttribute('data-theme', theme);
+			localStorage.setItem('hmss-theme', theme);
+			document.querySelectorAll('#theme, .theme__toggle').forEach(el => el.checked = isDark);
+			toast(`Switched to ${isDark ? 'Dark / Night' : 'Light'} mode.`);
+		}
 		if (event.target.matches('[data-analytics-chart-mode]')) {
 			state.analytics.chartMode = event.target.value;
 			render();
@@ -1612,6 +1798,17 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 	});
 
 	appRoot.addEventListener('keydown', event => {
+		if (event.key === 'Escape') hidePatientTooltip();
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd' && !event.shiftKey) {
+			event.preventDefault();
+			const current = document.documentElement.getAttribute('data-theme') || 'light';
+			const next = current === 'dark' ? 'light' : 'dark';
+			document.documentElement.setAttribute('data-theme', next);
+			localStorage.setItem('hmss-theme', next);
+			document.querySelectorAll('#theme, .theme__toggle').forEach(el => el.checked = (next === 'dark'));
+			toast(`Switched to ${next === 'dark' ? 'Dark / Night' : 'Light'} mode.`);
+			return;
+		}
 		if (event.target.matches('[data-referral-scan]') && event.key === 'Enter') {
 			event.preventDefault();
 			state.modal.query = event.target.value.trim();
@@ -1869,26 +2066,67 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 			? selectedExtras
 			: [...automaticIndoorServices(!existing), ...selectedExtras];
 		const dailyRate = moneyInput(values.price);
+		const serviceItems = extras.filter(item => !indoorFeeKind(item.name));
+		const serviceItemsTotal = serviceItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+		const serviceCharge = Math.round(serviceItemsTotal * 0.20);
 		const subtotal = dailyRate * days + sumExtras(extras);
-		const discount = Math.min(subtotal, moneyInput(values.discount));
-		const net = subtotal - discount;
+		const discount = Math.min(subtotal + serviceCharge, moneyInput(values.discount));
+		const net = subtotal + serviceCharge - discount;
 		const advance = Math.min(net, moneyInput(values.advance));
+
 		if (addingServices && existing) {
 			if (!extras.length) return toast('Select at least one service item.', true);
 			existing.extras ||= [];
 			existing.extras.push(...extras);
-			existing.subtotal += sumExtras(extras);
-			existing.net += sumExtras(extras);
-			existing.due = Math.max(0, existing.net - existing.advance);
+			const allServiceItems = getCabinServiceItems(existing.extras);
+			const allServiceItemsTotal = allServiceItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+			existing.serviceCharge = Math.round(allServiceItemsTotal * 0.20);
+			existing.subtotal = (Number(existing.dailyRate || 0) * Number(existing.days || 1)) + sumExtras(existing.extras);
+			existing.net = existing.subtotal + existing.serviceCharge - (Number(existing.discount) || 0);
+			existing.due = Math.max(0, existing.net - Number(existing.advance || 0));
 			await persist('Cabin service items added.'); openRecord('bookings', existing.id, true); return;
 		}
 		if (existing) {
-			existing.endAt = new Date(values.endAt).toISOString(); existing.days += days; existing.subtotal += subtotal; existing.net += net; existing.due += net; existing.status = 'Occupied';
-			existing.advance += advance; existing.due = Math.max(0, existing.net - existing.advance); existing.extras.push(...extras); existing.notes = values.notes || existing.notes;
+			existing.endAt = new Date(values.endAt).toISOString();
+			existing.days += days;
+			existing.extras.push(...extras);
+			existing.notes = values.notes || existing.notes;
+			const allServiceItems = getCabinServiceItems(existing.extras);
+			const allServiceItemsTotal = allServiceItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+			existing.serviceCharge = Math.round(allServiceItemsTotal * 0.20);
+			existing.subtotal = (Number(existing.dailyRate || 0) * Number(existing.days || 1)) + sumExtras(existing.extras);
+			existing.discount = (Number(existing.discount) || 0) + discount;
+			existing.net = existing.subtotal + existing.serviceCharge - existing.discount;
+			existing.advance = (Number(existing.advance) || 0) + advance;
+			existing.due = Math.max(0, existing.net - existing.advance);
+			existing.status = 'Occupied';
 			await persist('Cabin stay renewed.'); openRecord('bookings', existing.id, true); return;
 		}
 		const slipNo = Math.max(0, ...state.data.bookings.map(item => Number(item.slipNo) || 0)) + 1;
-		const record = { id: id('CAB'), bookingId: id('BOOK'), slipNo, cabinId: cabin?.id || cabinId, patientName: String(values.patientName).trim(), contact: String(values.contact).trim(), age: Number(values.age), gender: values.gender, startAt: new Date(values.startAt).toISOString(), endAt: new Date(values.endAt).toISOString(), days, dailyRate, extras, subtotal, discount, net, advance, due: net - advance, notes: values.notes || '', status: 'Occupied', createdAt: nowISO() };
+		const record = {
+			id: id('CAB'),
+			bookingId: id('BOOK'),
+			slipNo,
+			cabinId: cabin?.id || cabinId,
+			patientName: String(values.patientName).trim(),
+			contact: String(values.contact).trim(),
+			age: Number(values.age),
+			gender: values.gender,
+			startAt: new Date(values.startAt).toISOString(),
+			endAt: new Date(values.endAt).toISOString(),
+			days,
+			dailyRate,
+			extras,
+			serviceCharge,
+			subtotal,
+			discount,
+			net,
+			advance,
+			due: net - advance,
+			notes: values.notes || '',
+			status: 'Occupied',
+			createdAt: nowISO()
+		};
 		state.data.bookings.unshift(record);
 		if (await persist('Cabin admission saved.')) await queueFirebaseRecord('cabinBookings', record);
 		openRecord('bookings', record.id, true);
@@ -1965,7 +2203,7 @@ ${pageHeading('New test bill', 'Patient details and selected services are saved 
 	}
 
 	function fallbackData() {
-		return { users: [{ username: 'admin', password: 'admin123', name: 'Administrator' }], tests: [], doctors: [], agents: [], referrers: [], cabins: [], labOrders: [], appointments: [], bookings: [], floors: [], rooms: [], roomBills: [], roomClaims: [] };
+		return { users: [{ username: 'kph2026', password: 'kph@2026', name: 'Counter' }], tests: [], doctors: [], agents: [], referrers: [], cabins: [], labOrders: [], appointments: [], bookings: [], floors: [], rooms: [], roomBills: [], roomClaims: [] };
 	}
 
 	setInterval(expireCabinStays, 60000);
